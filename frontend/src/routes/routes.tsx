@@ -3,8 +3,10 @@ import { Route, Routes } from "react-router-dom";
 import Dashboard from "../views/Dashboard";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Student from "../views/Student";
-import LoginView from "../views/LoginView";
-import RegisterView from "../views/RegisterView ";
+import LoginView from "../views/Authentication/LoginView";
+import RegisterView from "../views/Authentication/RegisterView ";
+import ForgetPassword from "../views/Authentication/ForgetPasswordView";
+import ResetPassword from "../views/Authentication/ResetPasswordView";
 
 export const routes = [
     {
@@ -19,6 +21,14 @@ export const routes = [
     {
         path: "/register",
         element: RegisterView
+    },
+    {
+        path: "/forget-password",
+        element: ForgetPassword
+    },
+    {
+        path: "/reset-password",
+        element: ResetPassword
     },
     {
         path: "/student",

@@ -1,17 +1,16 @@
+import Login from "../../features/Authentication/Login/Login";
 
-import Register from "../features/Register/Register";
-
-const RegisterView = () => {
+const LoginView = () => {
     return (
         <div className="flex justify-center items-center h-full">
             <div className="border border-blue-300 p-5 rounded-lg">
                 <div className="mb-4">
-                    <h2 className="text-md">Register</h2>
+                    <h2 className="text-md">Login</h2>
                 </div>
-                <Register />
+                <Login />
             </div>
         </div>
     )
 }
 
-export default RegisterView; 
+export default LoginView; 
