@@ -1,22 +1,5 @@
 
 
-import React, { useState } from 'react'
-import TableTitle from './TableTitle'
-import TableHeader from './TableHeader'
-import { Pagination, Table } from 'antd';
-import AddDrawer from '../Drawer/AddDrawer';
-import ActionDropdown from '../ActionDropdown/ActionDropdown';
-import EditDrawer from '../Drawer/EditDrawer';
-
-const itemRender = (_, type, originalElement) => {
-  return type === "prev" ? (
-    <p>Previous</p>
-  ) : type === 'next' ? (
-    <p>Next</p>
-  ) : (originalElement)
-}
-
-
 const dataSource = [
   { key: '1', name: 'Mike', age: 32, address: '10 Downing Street' },
   { key: '2', name: 'John', age: 42, address: '10 Downing Street' },
@@ -131,12 +114,27 @@ const columns = [
 ];
 
 
+import React, { useState } from 'react'
+import TableTitle from './TableTitle'
+import TableHeader from './TableHeader'
+import { Pagination, Table } from 'antd';
+import AddDrawer from '../Drawer/AddDrawer';
+import ActionDropdown from '../ActionDropdown/ActionDropdown';
+import EditDrawer from '../Drawer/EditDrawer';
+
+const itemRender = (_, type, originalElement) => {
+  return type === "prev" ? (
+    <p>Previous</p>
+  ) : type === 'next' ? (
+    <p>Next</p>
+  ) : (originalElement)
+}
+
 
 const StudentTable = () => {
   const [columnInfo, setColumnsInfo] = useState(columns);
-  
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5); // default to 5
+  const [pageSize, setPageSize] = useState(5);
 
   const handleChangeColumns = (cols) => {
     setColumnsInfo(cols)
@@ -153,17 +151,31 @@ const StudentTable = () => {
   };
 
   return (
-    <div>
+    <div style={{ width: '100%' }}>
       <div>
         <TableTitle />
         <TableHeader columnInfo={columnInfo} handleChangeColumns={handleChangeColumns} />
-        <Table
-          rowSelection={{ type: "checkbox" }}
-          dataSource={paginatedData}       
-          columns={columnInfo}
-          pagination={false}               
-        />
-        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+        
+        {/* 🔥 FIX: Wrap table in scrollable container for mobile */}
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <Table
+            rowSelection={{ type: "checkbox" }}
+            dataSource={paginatedData}       
+            columns={columnInfo}
+            pagination={false}
+            scroll={{ x: 'max-content' }}  // 🔥 Horizontal scroll on small screens
+            size="small"  // 🔥 Smaller padding on mobile
+          />
+        </div>
+        
+        {/* 🔥 FIX: Pagination wraps on mobile */}
+        <div style={{ 
+          marginTop: 16, 
+          display: 'flex', 
+          justifyContent: 'flex-end',
+          flexWrap: 'wrap',  // Wrap to next line on small screens
+          gap: 8
+        }}>
           <Pagination
             current={currentPage}            
             pageSize={pageSize}              
@@ -173,6 +185,8 @@ const StudentTable = () => {
             onChange={handlePaginationChange} 
             onShowSizeChange={handlePaginationChange} 
             itemRender={itemRender}
+            responsive={true}  // 🔥 AntD responsive pagination
+            showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
           />
         </div>
       </div>
