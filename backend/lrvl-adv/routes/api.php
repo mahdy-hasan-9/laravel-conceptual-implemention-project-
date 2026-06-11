@@ -16,7 +16,11 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthenticationController::class, 'login'])->middleware('throttle:6,1');
 
     Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/user', [AuthenticationController::class, 'user']);
-        Route::post('/logout', [AuthenticationController::class, 'logout']);
+
+        Route::group(['prefix' => 'user'], function () {
+            Route::get('/profile', [AuthenticationController::class, 'user']);
+            Route::post('/logout', [AuthenticationController::class, 'logout']);
+        });
+
     });
 });

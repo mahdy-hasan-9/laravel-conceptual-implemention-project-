@@ -1,4 +1,10 @@
+
 const API_BASE = 'http://127.0.0.1:8000/api';
+
+export const isAuthenticated = () => {
+    return localStorage.getItem('token');
+}
+
 
 export const registerService = async (data: any) => {
     const res = await fetch(`${API_BASE}/auth/register`, {
@@ -48,4 +54,34 @@ export const loginService = async (data: any) => {
     return resp;
 };
 
-export const logoutService = () => { }
+export const getProfile = async () => {
+     const token = isAuthenticated();
+     const res = await fetch(`${API_BASE}/auth/user/profile`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization' : `Bearer ${token}`
+        },
+    });
+    const resp = await res.json();
+    return resp ; 
+}
+
+export const logoutService = async () => {
+    const token = isAuthenticated();
+    if(token != null){
+ const res = await fetch(`${API_BASE}/auth/user/logout`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization' : `Bearer ${token}`
+        },
+    });
+    const resp = await res.json();
+    return resp ; 
+    }
+    
+   
+}

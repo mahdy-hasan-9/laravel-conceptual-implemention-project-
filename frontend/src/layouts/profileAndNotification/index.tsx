@@ -51,6 +51,7 @@ const notificationData = [
 ];
 
 const ProfileAndNotification = ({
+    user, 
     profileItems,
     logoutHandler,
     userProfile,
@@ -251,6 +252,11 @@ const ProfileAndNotification = ({
         >
             {profileItems?.map((item) => {
                 if (!item) return null;
+
+                console.log(item);
+
+            
+                
 
                 if (item.type === 'divider') {
                     return (

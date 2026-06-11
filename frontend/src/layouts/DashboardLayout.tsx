@@ -3,16 +3,26 @@ import { UserOutlined, UploadOutlined } from '@ant-design/icons';
 import { Layout, Menu, theme, Button } from 'antd';
 import type { MenuProps } from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { menuOptions, menuPaths } from './sidebar/menuOption';
 import ProfileAndNotification from './profileAndNotification';
+import toast from 'react-hot-toast';
+import { getProfile, isAuthenticated, logoutService } from '../services/authService';
+import { email } from 'zod';
 
 const { Header, Content, Footer, Sider } = Layout;
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
+
+  const [user , setUser] = useState({
+    name : '',
+    email : '',
+  })
+  const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobile, setMobile] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -24,7 +34,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     avatar: '/assets/imgs/avatar.png',
   };
 
-  // Compute active menu key based on current pathname
   const selectedKey = useMemo(() => {
     const match = menuPaths.find((item) =>
       item.path === location.pathname || location.pathname.startsWith(item.path + '/')
@@ -47,8 +56,41 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     }
   }, [mobile]);
 
-  const logoutHandler = () => {
-    console.log('logged out');
+
+   useEffect(() => {
+  
+    const profile = async () => {
+        try {
+            const resp = await getProfile();
+            if(resp.status == 200 && resp.success == true){
+              setUser({
+                name : resp.data.name,
+                email : resp.data.email
+              })
+            }
+        } catch (error: any) {
+          toast.error(error.message || 'Something went wrong');
+        } 
+    }
+    profile();
+  },[])
+
+  const logoutHandler = async () => {
+      setLoading(true);
+        try {
+            const resp = await logoutService();
+            console.log(resp);
+            
+            if(resp.status == 200 && resp.success == true){
+              localStorage.removeItem('token');
+              navigate('/login', { replace: true });
+              toast.success(resp.message || 'Something went wrong');
+            }
+        } catch (error: any) {
+            toast.error(error.message || 'Something went wrong');
+        } finally {
+            setLoading(false);
+        }
   };
 
   const profileItems: MenuProps['items'] = [
@@ -56,7 +98,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       key: 'profile',
       label: (
         <Link to="/profile" style={{ color: 'black', textDecoration: 'none' }}>
-          <UserOutlined /> {userProfile.name}
+          <UserOutlined /> {user.name}
         </Link>
       ),
     },
@@ -74,7 +116,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     {
       key: 'logout',
       label: (
-        <span style={{ color: '#ff4d4f' }} onClick={() => console.log('Logout')}>
+        <span style={{ color: '#ff4d4f' }} onClick={() => logoutHandler()}>
           <MenuFoldOutlined /> Logout
         </span>
       ),
@@ -92,7 +134,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh', overflow: 'hidden' }}>
+    <Layout style={{ minHeight: '100vh'}}>
       <Sider
         trigger={null}
         collapsible
@@ -101,7 +143,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         collapsedWidth="0"
         className="custom-sider"
         style={{
-          overflow: 'hidden',
+          overflow: 'auto',
           height: '100vh',
           position: 'fixed',
           left: 0,
@@ -142,7 +184,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               style={{ fontSize: '16px', width: 64, height: 64 }}
             />
 
-            <ProfileAndNotification profileItems={profileItems} logoutHandler={logoutHandler} userProfile={userProfile} onMouseEnter={onmouseenter} onMouseLeave={onmouseleave} />
+            <ProfileAndNotification user={user} profileItems={profileItems} logoutHandler={logoutHandler} userProfile={userProfile} onMouseEnter={onmouseenter} onMouseLeave={onmouseleave} />
 
           </div>
         </Header>
@@ -153,7 +195,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               padding: 24,
               background: colorBgContainer,
               borderRadius: borderRadiusLG,
-              overflow: 'auto',
               marginTop: '20px',
             }}
           >

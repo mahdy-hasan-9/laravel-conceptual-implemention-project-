@@ -1,8 +1,8 @@
-import React from 'react'
+import StudentTable from '../../components/StudentTable/StudentTable'
 
 const Student = () => {
     return (
-        <div>Student</div>
+        <StudentTable/>
     )
 }
 

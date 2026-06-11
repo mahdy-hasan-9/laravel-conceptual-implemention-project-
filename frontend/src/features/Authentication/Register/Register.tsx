@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { registerService } from '../../../services/authService';
 import toast from 'react-hot-toast';
+import { Link, useNavigate } from 'react-router-dom';
 
 const registerSchema = z.object({
     name: z
@@ -32,7 +33,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 const Register = () => {
     const [loading, setLoading] = useState(false);
-
+    const navigate = useNavigate();
     const {
         control,
         handleSubmit,
@@ -54,8 +55,12 @@ const Register = () => {
     const onSubmit = async (data: RegisterFormData) => {
         setLoading(true);
         try {
-            await registerService(data);
-            reset();
+            const resp = await registerService(data);
+            if(resp.status == 201){
+                reset();
+                navigate('/login', { replace: true });
+                toast.success(resp.message || 'Logged In');
+            }
         } catch (error: any) {
             if (error.status === 422 && error.errors) {
                 for (const fieldName in error.errors) {
@@ -169,6 +174,7 @@ const Register = () => {
                     </Button>
                 </Form.Item>
             </Form>
+             <Link to='/login'>Login Here</Link>
         </Spin>
     );
 };
