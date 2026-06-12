@@ -10,7 +10,7 @@ import SwitchInput from '../FormComponents/SwitchInput';
 import MultipleSelectWithSearchInput from '../FormComponents/MultipleSelectWithSearchInput';
 import TextAreaInput from '../FormComponents/TextAreaInput';
 import MultipleCheckboxInput from '../FormComponents/MultipleCheckboxInput';
-import { getActivityList, getBooksList, getClassList } from '../../services/studentService';
+import { createStudentService, getActivityList, getBooksList, getClassList } from '../../services/studentService';
 import toast from 'react-hot-toast';
 
 
@@ -56,7 +56,7 @@ const AddDrawerForm = () => {
         }
         activityList();
 
-          const bookList = async () => {
+        const bookList = async () => {
             try {
                 const resp = await getBooksList();
                 if (resp.status === 200 && resp.success === true) {
@@ -77,11 +77,25 @@ const AddDrawerForm = () => {
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
-            console.log('Form values:', values);
+            console.log(values);
 
+
+            const formData = new FormData();
+            formData.append('name', values.name);
+            formData.append('age', String(values.age));
+            formData.append('gender', values.gender);
+            formData.append('address', values.address);
+            formData.append('is_active', values.is_active ? '1' : '0');
+            formData.append('class', String(values.class));
+            if (values.image && values.image.length > 0) {
+                const fileObj = values.image[0].originFileObj;
+                if (fileObj instanceof File) {
+                    formData.append('image', fileObj, fileObj.name);
+                }
+            }
             setLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
+            const res = await createStudentService(formData);
+            console.log(res);
             message.success('Student added successfully!');
             form.resetFields();
         } catch (error) {

@@ -65,7 +65,7 @@ const ImageUpload = ({
             setImageUrl(null);
         }
         if (info.file.status === 'done') {
-            message.success('Image ready!');
+            message.success('Image Uploaded!');
         }
         onChange?.(normFile(info));
     };
