@@ -56,7 +56,6 @@ const Login = () => {
                     });
                 }
             } else {
-                console.log(error);
                 toast.error(error.message || 'Something went wrong');
             }
         } finally {

@@ -28,7 +28,7 @@ const EditDrawer = () => {
 
     return (
         
-        <Drawer width={400} open={openDrawer} title="Add Student" onClose={onCloseDrawer}>
+        <Drawer size={400} open={openDrawer} title="Edit Student" onClose={onCloseDrawer}>
             <h3 className='text-xl'>hello ant d edit</h3>
         </Drawer>
     )

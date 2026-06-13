@@ -35,7 +35,7 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         'Authorization': `Bearer ${token}`,
         ...options.headers,
     };
-    
+
     if (options.body && !(options.body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
     }
@@ -95,3 +95,12 @@ export const deleteStudentService = async (id: number) => {
         method: 'DELETE',
     });
 };
+
+export const getStudentList = async (params: any = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/student/rsc?${query}`);
+};
+
+export const getStudentDetails = async (id: number) => {
+    return request(`/student/rsc/${id}`);
+};  

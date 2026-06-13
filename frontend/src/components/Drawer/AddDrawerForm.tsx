@@ -78,7 +78,6 @@ const AddDrawerForm = () => {
         try {
             const values = await form.validateFields();
             setLoading(true);
-            console.log('Form values:', values);
             const res = await createStudentService(values);
             message.success('Student added successfully!');
             form.resetFields();
@@ -149,7 +148,7 @@ const AddDrawerForm = () => {
                 <Row gutter={16}>
                     <Col span={12}>
                         <SingleSelectWithSearchInput
-                            name="class"
+                            name="class_id"
                             label={
                                 <Space>
                                     Class

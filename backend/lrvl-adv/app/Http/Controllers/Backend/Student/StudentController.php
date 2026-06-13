@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Backend\Student;
 
 use App\Http\Controllers\Controller;
 use App\Http\Request\Backend\Student\StudentRequest;
+use App\Models\Student;
 use App\Services\Backend\Student\StudentService;
 
 
@@ -18,16 +19,30 @@ class StudentController extends Controller
 
     public function index()
     {
-        // To be implemented: List students
+
+        $student = Student::with([
+            'studentClass' => function ($query) {
+                $query->select('id', 'name');
+            },
+            'activities' => function ($query) {
+                $query->select('activities.id', 'activities.name');
+            },
+            'books' => function ($query) {
+                $query->select('books.id', 'books.name');
+            }
+        ])->get();
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'data' => $student,
+            'message' => 'Student List'
+        ], 200);
     }
 
     public function store(StudentRequest $request)
     {
-
-        // return response()->json($request->validated());
-
         $result = $this->studentService->store($request->validated());
-
         return response()->json($result, $result['status']);
     }
 

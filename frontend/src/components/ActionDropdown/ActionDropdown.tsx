@@ -38,7 +38,6 @@ const ActionDropdown = ({ data }) => {
 
                 open={isOpen}
                 onOk={() => {
-                    console.log('ok');
                     setIsOpen(false);
                 }}
                 onCancel={() => setIsOpen(false)}

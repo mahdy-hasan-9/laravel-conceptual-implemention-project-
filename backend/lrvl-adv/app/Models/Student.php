@@ -14,7 +14,9 @@ class Student extends Model
         'age' => 'integer',
     ];
 
-    public function class(){
+    
+
+    public function studentClass(){
         return $this->belongsTo(ClassModel::class,'class_id');
     }
 
