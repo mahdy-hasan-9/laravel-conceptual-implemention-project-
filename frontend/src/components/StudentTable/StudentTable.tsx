@@ -150,7 +150,7 @@ const StudentTable = () => {
     return <div>Error: {error instanceof Error ? error.message : 'An error occurred'}</div>
   }
 
-  console.log(data.data);
+  // console.log(data.data);
 
   const paginatedData = data.data?.slice(
     (currentPage - 1) * pageSize,

@@ -63,6 +63,10 @@ class StudentService
             }
 
             $student->update($data);
+            $student->activities()->sync($data['activities']);
+            $student->books()->sync($data['books'] ?? []);
+
+            
             return [
                 'success' => true,
                 'status' => 200,
@@ -84,7 +88,7 @@ class StudentService
     {
         try {
             $student = $this->student->findOrFail($id);
-            if($student->image_url) {
+            if ($student->image_url) {
                 Storage::disk('public')->delete($student->image_url);
             }
             $student->delete();

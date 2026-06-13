@@ -10,9 +10,9 @@ const ActionDropdown = ({ data }) => {
     const [isOpen, setIsOpen] = useState(false)
 
     const toggleDrawer = useToggleDrawer();
-
+    
     const handleEdit = () => {
-        toggleDrawer(true, "showDrawerEdit")
+        toggleDrawer(true, "showDrawerEdit", data.id)
     }
 
     const items = [{

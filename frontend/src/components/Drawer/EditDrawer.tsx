@@ -2,34 +2,42 @@ import { Drawer } from 'antd'
 import React, { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom';
 import { useToggleDrawer } from '../../hooks/useToggleDrawer';
+import EditDrawerForm from './EditDrawerForm';
 
 const EditDrawer = () => {
 
-    const [openDrawer , setOpenDrawer] = useState(false);
+    const [openDrawer, setOpenDrawer] = useState(false);
     const location = useLocation();
 
     const toggleDrawer = useToggleDrawer();
 
     const onCloseDrawer = () => {
-        toggleDrawer(false , "showDrawerEdit");
+        toggleDrawer(false, "showDrawerEdit");
     }
+
 
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
-        const showDrawerParams = queryParams.get("showDrawerEdit");
+        const showDrawerParam = queryParams.get("showDrawerEdit");
 
-        if(showDrawerParams == 'true'){
+        if (
+            showDrawerParam?.split("-")[0] === "true" 
+            // showDrawerParam?.split("-")[1] === String(data?.id)
+        ) {
             setOpenDrawer(true);
-        }
-        else{
+        } else {
             setOpenDrawer(false);
         }
-    },[location.search])
+    }, [location.search]);
+
+
+
+
 
     return (
-        
+
         <Drawer size={400} open={openDrawer} title="Edit Student" onClose={onCloseDrawer}>
-            <h3 className='text-xl'>hello ant d edit</h3>
+            <EditDrawerForm />
         </Drawer>
     )
 }

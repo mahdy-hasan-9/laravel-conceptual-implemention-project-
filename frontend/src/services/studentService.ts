@@ -73,13 +73,17 @@ export const createStudentService = async (values: any) => {
 };
 
 
-export const updateStudentService = async (id: number, values: any) => {
+export const updateStudentService = async (id: string, values: any) => {
     const data = (values.image || values.image_removed) ? toFormData(values) : values;
     let body: any = data;
     let method = 'PUT';
+
+    console.log(data + " from service");
+    
+
     if (data instanceof FormData) {
         data.append('_method', 'PUT');
-        method = 'POST';
+        method = 'PUT';
         body = data;
     } else {
         body = JSON.stringify(data);
@@ -90,7 +94,7 @@ export const updateStudentService = async (id: number, values: any) => {
     });
 };
 
-export const deleteStudentService = async (id: number) => {
+export const deleteStudentService = async (id: string) => {
     return request(`/student/rsc/${id}`, {
         method: 'DELETE',
     });
@@ -101,6 +105,6 @@ export const getStudentList = async (params: any = {}) => {
     return request(`/student/rsc?${query}`);
 };
 
-export const getStudentDetails = async (id: number) => {
+export const getStudentDetails = async (id: string) => {
     return request(`/student/rsc/${id}`);
 };  

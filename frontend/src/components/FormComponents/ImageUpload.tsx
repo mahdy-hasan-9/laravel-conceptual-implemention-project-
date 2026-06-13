@@ -1,6 +1,6 @@
 import { Upload, message } from 'antd';
-import { UploadOutlined, CloseOutlined } from '@ant-design/icons';
-import { useState, useCallback } from 'react';
+import { CloseOutlined } from '@ant-design/icons';
+import { useState, useEffect, useCallback } from 'react';
 import DefaultImage from './DefaultImage';
 
 interface ImageUploadProps {
@@ -10,7 +10,7 @@ interface ImageUploadProps {
     acceptedTypes?: string[];
     maxCount?: number;
     onChange?: (fileList: any[]) => void;
-    value?: any[];
+    value?: any[]; 
     width?: number;
     height?: number;
 }
@@ -22,12 +22,33 @@ const ImageUpload = ({
     acceptedTypes = ['image/jpeg', 'image/png'],
     maxCount = 1,
     onChange,
-    value,
+    value = [], 
     width = 650,
     height = 100
 }: ImageUploadProps) => {
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [isRemoved, setIsRemoved] = useState(false);
+
+    useEffect(() => {
+        if (value && value.length > 0) {
+            const file = value[0];
+            if (file.url || file.thumbUrl) {
+                setImageUrl(file.url || file.thumbUrl);
+                setIsRemoved(false);
+            } 
+            else if (file.originFileObj) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    setImageUrl(e.target?.result as string);
+                };
+                reader.readAsDataURL(file.originFileObj);
+                setIsRemoved(false);
+            }
+        } else {
+            setImageUrl(null);
+            setIsRemoved(false);
+        }
+    }, [value]);
 
     const normFile = (e: any) => {
         if (Array.isArray(e)) return e;
@@ -49,23 +70,26 @@ const ImageUpload = ({
     };
 
     const customRequest = ({ file, onSuccess, onError }: any) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            setImageUrl(e.target?.result as string);
-            setIsRemoved(false);
+        setTimeout(() => {
             onSuccess?.('ok');
-        };
-        reader.onerror = (error) => onError?.(error);
-        reader.readAsDataURL(file);
+        }, 0);
     };
 
     const handleChange = (info: any) => {
         const { fileList } = info;
         if (fileList.length === 0) {
             setImageUrl(null);
-        }
-        if (info.file.status === 'done') {
-            message.success('Image Uploaded!');
+            setIsRemoved(true);
+        } else {
+            const file = fileList[fileList.length - 1];
+            if (file.originFileObj && !file.url) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    setImageUrl(e.target?.result as string);
+                    setIsRemoved(false);
+                };
+                reader.readAsDataURL(file.originFileObj);
+            }
         }
         onChange?.(normFile(info));
     };
@@ -73,7 +97,7 @@ const ImageUpload = ({
     const handleCancel = useCallback(() => {
         setImageUrl(null);
         setIsRemoved(true);
-        onChange?.([]);
+        onChange?.([]); 
         message.info('Image removed. Default will be used.');
     }, [onChange]);
 
@@ -83,7 +107,6 @@ const ImageUpload = ({
         return true;
     };
 
-    // Common style for the container box
     const containerStyle = {
         width,
         height,
@@ -98,7 +121,6 @@ const ImageUpload = ({
         cursor: 'pointer'
     };
 
-    // Common style for images
     const imageStyle = {
         width: '100%',
         height: '100%',
@@ -124,7 +146,7 @@ const ImageUpload = ({
                 onRemove={handleRemove}
                 maxCount={maxCount}
                 accept={acceptedTypes.join(',')}
-                fileList={value}
+                fileList={value} 
             >
                 <div style={containerStyle}>
                     {imageUrl ? (

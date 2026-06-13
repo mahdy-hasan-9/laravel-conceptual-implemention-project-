@@ -71,7 +71,6 @@ const AddDrawerForm = () => {
 
     }, []);
 
-    getActivityList
 
 
     const handleSubmit = async () => {
