@@ -201,7 +201,7 @@ const StudentTable = () => {
         </div>
       </div>
       <AddDrawer />
-      <EditDrawer />
+
     </div>
   );
 };

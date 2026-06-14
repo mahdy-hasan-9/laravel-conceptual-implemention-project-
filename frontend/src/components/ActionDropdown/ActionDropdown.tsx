@@ -6,22 +6,24 @@ import React, { useState } from 'react'
 import { useToggleDrawer } from '../../hooks/useToggleDrawer';
 import { deleteStudentService } from '../../services/studentService';
 import toast from 'react-hot-toast';
-import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import EditDrawerForm from '../Drawer/EditDrawerForm';
+import EditDrawer from '../Drawer/EditDrawer';
 
 const ActionDropdown = ({ data }) => {
 
     const [isOpen, setIsOpen] = useState(false)
-    const [loading, setLoading] = useState(false);
 
     const toggleDrawer = useToggleDrawer();
     const queryClient = useQueryClient();
+
 
     const handleEdit = () => {
         toggleDrawer(true, "showDrawerEdit", data.id)
     }
 
 
-    const { mutate: deleteStudent } = useMutation({
+    const { mutateAsync: deleteStudent } = useMutation({
         mutationFn: deleteStudentService,
         onSuccess: () => {
             queryClient.invalidateQueries({
@@ -36,7 +38,7 @@ const ActionDropdown = ({ data }) => {
 
     const hangleDelete = async (id : any) => {
         try {
-            deleteStudent(id)
+            await deleteStudent(id)
             message.success('Student deleted successfully!');
         } catch (error: any) {
             toast.error(error.message || 'Something went wrong');
@@ -75,6 +77,7 @@ const ActionDropdown = ({ data }) => {
             >
                 <p>Are you sure you want to delete this student?</p>
             </Modal>
+            <EditDrawer data={data}/>
         </>
     )
 }

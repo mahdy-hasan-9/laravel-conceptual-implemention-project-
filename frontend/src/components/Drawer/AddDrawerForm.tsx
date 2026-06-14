@@ -13,6 +13,7 @@ import { createStudentService, getActivityList, getBooksList, getClassList } fro
 import toast from 'react-hot-toast';
 import ImageUpload from '../FormComponents/ImageUpload';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useToggleDrawer } from '../../hooks/useToggleDrawer';
 
 
 
@@ -82,12 +83,22 @@ const AddDrawerForm = () => {
         }
     }, [bookQuery.data]);
 
+    const toggleDrawer = useToggleDrawer();
+    const onCloseDrawer = () => {
+        toggleDrawer(false, "showDrawerAdd");
+    }
+
+
+
     const { mutate: createStudentApi } = useMutation({
         mutationFn: createStudentService,
         onSuccess: () => {
             queryClient.invalidateQueries({
                 queryKey: ["students"],
             });
+            message.success('Student added successfully!');
+            form.resetFields();
+            onCloseDrawer();
         },
         onError: (error: any) => {
             toast.error(error.message || 'Something went wrong');
@@ -98,9 +109,6 @@ const AddDrawerForm = () => {
         try {
             const values = await form.validateFields();
             createStudentApi(values);
-            message.success('Student added successfully!');
-            form.resetFields();
-
         } catch (error: any) {
             if (error.errorFields) {
                 console.error('Validation failed:', error);

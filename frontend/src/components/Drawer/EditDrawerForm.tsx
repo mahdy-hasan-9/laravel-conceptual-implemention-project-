@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Form, Button, Row, Col, Card, message, Space } from 'antd';
+import { Form, Button, Row, Col, Card, message, Space, Drawer } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import TextInput from '../FormComponents/TextInput';
 import NumberInput from '../FormComponents/NumberInput';
@@ -9,9 +9,12 @@ import SwitchInput from '../FormComponents/SwitchInput';
 import MultipleSelectWithSearchInput from '../FormComponents/MultipleSelectWithSearchInput';
 import TextAreaInput from '../FormComponents/TextAreaInput';
 import MultipleCheckboxInput from '../FormComponents/MultipleCheckboxInput';
-import { createStudentService, getActivityList, getBooksList, getClassList, getStudentDetails, getStudentList, updateStudentService } from '../../services/studentService';
+import { getActivityList, getBooksList, getClassList, getStudentDetails, updateStudentService } from '../../services/studentService';
 import toast from 'react-hot-toast';
 import ImageUpload from '../FormComponents/ImageUpload';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useToggleDrawer } from '../../hooks/useToggleDrawer';
+import { useLocation } from 'react-router-dom';
 
 
 
@@ -28,49 +31,82 @@ const EditDrawerForm = () => {
   const [activityOptions, setActivityOptons] = useState([]);
   const [bookOptions, setBookOptons] = useState([]);
   const [studentId, setStudentId] = useState<string>();
+  const queryClient = useQueryClient();
+  const [openDrawer, setOpenDrawer] = useState(false);
+  const location = useLocation();
+
+
+  const toggleDrawer = useToggleDrawer();
+
+  const onCloseDrawer = () => {
+    toggleDrawer(false, "showDrawerEdit");
+  }
+
 
   useEffect(() => {
-    const classList = async () => {
-      try {
-        const resp = await getClassList();
-        if (resp.status === 200 && resp.success === true) {
-          setClasses(resp.data);
-        }
-      } catch (error: any) {
-        localStorage.removeItem('token');
-        toast.error(error.message || 'Something went wrong');
-      }
-    };
-    classList();
+    const queryParams = new URLSearchParams(location.search);
+    const showDrawerParam = queryParams.get("showDrawerEdit");
+
+    if (
+      showDrawerParam?.split("-")[0] === "true"
+    ) {
+      setOpenDrawer(true);
+    } else {
+      setOpenDrawer(false);
+    }
+  }, [location.search]);
 
 
-    const activityList = async () => {
-      try {
-        const resp = await getActivityList();
-        if (resp.status === 200 && resp.success === true) {
-          setActivityOptons(resp.data);
-        }
-      } catch (error: any) {
-        localStorage.removeItem('token');
-        toast.error(error.message || 'Something went wrong');
+  const classQuery = useQuery({
+    queryKey: ['classList'],
+    queryFn: getClassList,
+  });
+  useEffect(() => {
+    if (classQuery.data) {
+      const { isPending, isError, data, error, isSuccess } = classQuery;
+      if (isPending) {
+        console.log("Class list is loading...");
+      } else if (isError) {
+        toast.error(error instanceof Error ? error.message : 'Something went wrong while fetching class list');
+      } else if (isSuccess) {
+        setClasses(data.data);
       }
     }
-    activityList();
+  }, [classQuery.data]);
 
-    const bookList = async () => {
-      try {
-        const resp = await getBooksList();
-        if (resp.status === 200 && resp.success === true) {
-          setBookOptons(resp.data);
-        }
-      } catch (error: any) {
-        localStorage.removeItem('token');
-        toast.error(error.message || 'Something went wrong');
+  const activityQuery = useQuery({
+    queryKey: ['activityList'],
+    queryFn: getActivityList,
+  });
+  useEffect(() => {
+    if (activityQuery.data) {
+      const { isPending, isError, data, error, isSuccess } = activityQuery;
+      if (isPending) {
+        console.log("Activity list is loading...");
+      } else if (isError) {
+        toast.error(error instanceof Error ? error.message : 'Something went wrong while fetching activity list');
+      } else if (isSuccess) {
+        setActivityOptons(data.data);
       }
     }
-    bookList();
+  }, [activityQuery.data]);
 
-  }, []);
+  const bookQuery = useQuery({
+    queryKey: ['bookList'],
+    queryFn: getBooksList,
+  });
+  useEffect(() => {
+    if (bookQuery.data) {
+      const { isPending, isError, data, error, isSuccess } = bookQuery;
+      if (isPending) {
+        console.log("Book list is loading...");
+      } else if (isError) {
+        toast.error(error instanceof Error ? error.message : 'Something went wrong while fetching book list');
+      } else if (isSuccess) {
+        setBookOptons(data.data);
+      }
+    }
+  }, [bookQuery.data]);
 
   useEffect(() => {
     const fetchStudentData = async () => {
@@ -82,9 +118,6 @@ const EditDrawerForm = () => {
 
         if (id) {
           const resp = await getStudentDetails(id);
-
-          console.log(resp);
-
 
           if (resp.status === 200 && resp.success === true) {
 
@@ -125,19 +158,49 @@ const EditDrawerForm = () => {
       }
     };
     fetchStudentData();
-  }, [form, studentId]);
+  }, [form, studentId, location.search]);
+
+
+  // const { mutate: updateStudentApi } = useMutation({
+  //   mutationFn: updateStudentService,
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({
+  //       queryKey: ["students"],
+  //     });
+  //     message.success('Student updated successfully!');
+  //     form.resetFields();
+  //   },
+  //   onError: (error: any) => {
+  //     toast.error(error.message || 'Something went wrong');
+  //   }
+  // })
+
+  // const handleSubmit = async () => {
+  //   try {
+  //     const values = await form.validateFields();
+  //     updateStudentApi({ id: studentId, ...values });
+  //   } catch (error: any) {
+  //     if (error.errorFields) {
+  //       console.error('Validation failed:', error);
+  //     } else {
+  //       console.error('API error:', error);
+  //     }
+  //   }
+  // };
 
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
-
-      console.log(values + " from form submit");
-
       const res = await updateStudentService(studentId, values);
       message.success('Student updated successfully!');
       form.resetFields();
+      onCloseDrawer();
+      queryClient.invalidateQueries({
+        queryKey: ["students"],
+      });
+
     } catch (error: any) {
       console.error('Submission failed:', error);
       if (error.errors) {
@@ -156,7 +219,7 @@ const EditDrawerForm = () => {
   };
 
   return (
-    <div>
+    <Drawer size={400} open={openDrawer} title="Edit Student" onClose={onCloseDrawer}>
       <Form form={form} layout="vertical" requiredMark="optional" autoComplete="off">
 
         <Card style={{ marginBottom: 24, textAlign: 'center', padding: '16px' }}>
@@ -265,7 +328,7 @@ const EditDrawerForm = () => {
           </div>
         </Form.Item>
       </Form>
-    </div>
+    </Drawer>
   );
 };
 

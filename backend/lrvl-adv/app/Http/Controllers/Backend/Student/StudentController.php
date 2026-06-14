@@ -19,7 +19,6 @@ class StudentController extends Controller
 
     public function index()
     {
-
         $student = Student::with([
             'studentClass' => function ($query) {
                 $query->select('id', 'name');
@@ -30,7 +29,7 @@ class StudentController extends Controller
             'books' => function ($query) {
                 $query->select('books.id', 'books.name');
             }
-        ])->get();
+        ])->orderBy('id', 'desc')->get();
 
         return response()->json([
             'success' => true,
