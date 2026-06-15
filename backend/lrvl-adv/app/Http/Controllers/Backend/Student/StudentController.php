@@ -19,6 +19,9 @@ class StudentController extends Controller
 
     public function index()
     {
+        $page = request()->query('page', 1);
+        $perPage = request()->query('per_page', 10);
+
         $student = Student::with([
             'studentClass' => function ($query) {
                 $query->select('id', 'name');
@@ -29,12 +32,17 @@ class StudentController extends Controller
             'books' => function ($query) {
                 $query->select('books.id', 'books.name');
             }
-        ])->orderBy('id', 'desc')->get();
+        ])->orderBy('id', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
             'success' => true,
             'status' => 200,
-            'data' => $student,
+            'data' => $student->items(),
+            'total' => $student->total(),
+            'current_page' => $student->currentPage(),
+            'per_page' => $student->perPage(),
+            'last_page' => $student->lastPage(),
             'message' => 'Student List'
         ], 200);
     }

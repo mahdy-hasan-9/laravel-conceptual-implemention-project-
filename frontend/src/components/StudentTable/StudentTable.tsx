@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react'
 import TableTitle from './TableTitle'
 import TableHeader from './TableHeader'
-import { Pagination, Table } from 'antd';
+import { Pagination, Table, Spin } from 'antd';
 import AddDrawer from '../Drawer/AddDrawer';
 import { getStudentList } from '../../services/studentService';
 import { useQuery } from '@tanstack/react-query';
@@ -17,7 +16,6 @@ const itemRender = (_, type, originalElement) => {
   ) : (originalElement)
 }
 
-
 const StudentTable = () => {
   const [columnInfo, setColumnsInfo] = useState(columns);
   const [currentPage, setCurrentPage] = useState(1);
@@ -27,26 +25,35 @@ const StudentTable = () => {
     setColumnsInfo(cols)
   }
 
-  const { isPending, isError, data, error } = useQuery({
-    queryKey: ['students'],
-    queryFn: getStudentList,
+  const { isPending, isFetching, isError, data, error } = useQuery({
+    queryKey: ['students', currentPage, pageSize],
+    queryFn: () => getStudentList({
+      page: currentPage,
+      per_page: pageSize
+    }),
+    placeholderData: (previousData) => previousData,
   })
 
   if (isPending) {
-    return <div>Loading...</div>
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '50vh'
+      }}>
+        <Spin size="large" tip="Loading students..." />
+      </div>
+    )
   }
+
   if (isError) {
     return <div>Error: {error instanceof Error ? error.message : 'An error occurred'}</div>
   }
 
-
-  const paginatedData = data.data?.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
-
   const handlePaginationChange = (page, size) => {
-    setCurrentPage(page);
+    const newPage = size !== pageSize ? 1 : page;
+    setCurrentPage(newPage);
     setPageSize(size);
   };
 
@@ -60,11 +67,12 @@ const StudentTable = () => {
           <Table
             rowKey="id"
             rowSelection={{ type: "checkbox" }}
-            dataSource={paginatedData}
+            dataSource={data?.data || []}
             columns={columnInfo}
             pagination={false}
             scroll={{ x: 'max-content' }}
             size="small"
+            loading={isFetching} 
           />
         </div>
 
@@ -78,7 +86,7 @@ const StudentTable = () => {
           <Pagination
             current={currentPage}
             pageSize={pageSize}
-            total={data.data?.length}
+            total={data?.total || 0}
             showSizeChanger
             pageSizeOptions={['5', '10', '20']}
             onChange={handlePaginationChange}
