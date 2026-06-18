@@ -1,5 +1,4 @@
 import { Badge } from 'antd'
-import React from 'react'
 
 const TableTitle = () => {
   return (

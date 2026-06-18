@@ -19,8 +19,18 @@ class StudentController extends Controller
 
     public function index()
     {
+        // {"page":"1","per_page":"5","class_id":"11","activities":"6,5,4","books":"7,8"}
+
         $page = request()->query('page', 1);
         $perPage = request()->query('per_page', 10);
+
+        $classId = request()->query('class_id');
+        $activities = request()->query('activities');
+        $books = request()->query('books');
+
+        $classId = ($classId === 'undefined' || $classId === 'null' || $classId === '') ? null : $classId;
+        $activities = ($activities === 'undefined' || $activities === 'null' || $activities === '') ? null : $activities;
+        $books = ($books === 'undefined' || $books === 'null' || $books === '') ? null : $books;
 
         $student = Student::with([
             'studentClass' => function ($query) {
@@ -32,7 +42,23 @@ class StudentController extends Controller
             'books' => function ($query) {
                 $query->select('books.id', 'books.name');
             }
-        ])->orderBy('id', 'desc')
+        ])
+            ->when($classId, function ($query) use ($classId) {
+                 $query->where('class_id', (int) $classId);
+            })
+            ->when($activities , function ($query, $activities) {
+                $activityIds = explode(',', $activities);
+                $query->whereHas('activities', function ($q) use ($activityIds) {
+                    $q->whereIn('activities.id', $activityIds);
+                });
+            })
+            ->when($books , function ($query, $books) {
+                $bookIds = explode(',', $books);
+                $query->whereHas('books', function ($q) use ($bookIds) {
+                    $q->whereIn('books.id', $bookIds);
+                });
+            })
+            ->orderBy('id', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([

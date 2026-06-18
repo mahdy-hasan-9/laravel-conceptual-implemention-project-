@@ -1,7 +1,7 @@
 import { Button } from 'antd'
 import filtersIcon from '../../assets/icons/filters.svg'
 
-const FilterButton = ({toggleFilter}) => {
+const FilterButton = ({toggleFilter}: {toggleFilter: () => void}) => {
   return (
 
       <Button onClick={toggleFilter}>

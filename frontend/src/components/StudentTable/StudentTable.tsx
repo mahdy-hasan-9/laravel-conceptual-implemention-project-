@@ -1,7 +1,11 @@
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import TableTitle from './TableTitle'
 import TableHeader from './TableHeader'
 import { Pagination, Table, Spin } from 'antd';
+import {
+  DoubleRightOutlined,
+  DoubleLeftOutlined
+} from '@ant-design/icons';
 import AddDrawer from '../Drawer/AddDrawer';
 import { getStudentList } from '../../services/studentService';
 import { useQuery } from '@tanstack/react-query';
@@ -10,9 +14,9 @@ import EditDrawer from '../Drawer/EditDrawer';
 
 const itemRender = (_, type, originalElement) => {
   return type === "prev" ? (
-    <p>Previous</p>
+    <DoubleLeftOutlined />
   ) : type === 'next' ? (
-    <p>Next</p>
+    <DoubleRightOutlined />
   ) : (originalElement)
 }
 
@@ -21,18 +25,52 @@ const StudentTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
+  const [search , setSearch] = useState("") ; 
+
+
+  const [filters, setFilters] = useState({
+    class_id: '',
+    activities: [],
+    books: [],
+  });
+
   const handleChangeColumns = (cols) => {
     setColumnsInfo(cols)
   }
 
-  const { isPending, isFetching, isError, data, error } = useQuery({
-    queryKey: ['students', currentPage, pageSize],
+
+  const handleResetFilters = () => {
+    setFilters({
+      class_id: '',
+      activities: [],
+      books: [],
+    });
+    setCurrentPage(1); 
+  };
+
+  
+  console.log(search);
+  
+
+
+  const { isPending, isFetching, isSuccess, isError, data, error } = useQuery({
+    queryKey: ['students', currentPage, pageSize, filters],
     queryFn: () => getStudentList({
       page: currentPage,
-      per_page: pageSize
+      per_page: pageSize,
+      class_id: filters.class_id || null,
+      activities: filters.activities.length > 0 ? filters.activities.join(',') : null,
+      books: filters.books.length > 0 ? filters.books.join(',') : null,
     }),
     placeholderData: (previousData) => previousData,
   })
+
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters , handleResetFilters]) 
+
+
 
   if (isPending) {
     return (
@@ -42,7 +80,7 @@ const StudentTable = () => {
         alignItems: 'center',
         height: '50vh'
       }}>
-        <Spin size="large" tip="Loading students..." />
+        <Spin size="large" description="Loading students..." />
       </div>
     )
   }
@@ -57,11 +95,12 @@ const StudentTable = () => {
     setPageSize(size);
   };
 
+
   return (
     <div style={{ width: '100%' }}>
       <div>
         <TableTitle />
-        <TableHeader columnInfo={columnInfo} handleChangeColumns={handleChangeColumns} />
+        <TableHeader setSearch={setSearch} columnInfo={columnInfo} handleChangeColumns={handleChangeColumns} filters={filters} setFilters={setFilters} handleResetFilters={handleResetFilters}/>
 
         <div style={{ overflowX: 'auto', width: '100%' }}>
           <Table
@@ -72,7 +111,7 @@ const StudentTable = () => {
             pagination={false}
             scroll={{ x: 'max-content' }}
             size="small"
-            loading={isFetching} 
+            loading={isFetching}
           />
         </div>
 

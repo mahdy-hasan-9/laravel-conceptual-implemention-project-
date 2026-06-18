@@ -105,7 +105,7 @@ const AddDrawerForm = () => {
         }
     })
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (values:any) => {
         try {
             const values = await form.validateFields();
             createStudentApi(values);
