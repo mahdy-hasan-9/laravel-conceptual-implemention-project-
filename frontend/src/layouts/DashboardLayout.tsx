@@ -99,9 +99,11 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     {
       key: 'profile',
       label: (
-        <span>
-          <UserOutlined /> {user.name ? user.name : "User"}
-        </span>
+        <Link to='/profile'>
+          <span>
+            <UserOutlined /> {user.name ? user.name : "User"}
+          </span>
+        </Link>
       ),
     },
     {
@@ -156,6 +158,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       >
         <div className="demo-logo-vertical" style={{ padding: '20px', textAlign: 'center', flexShrink: 0 }}>
           {/* Logo here */}
+          {/* <img src={userProfile.avatar} alt="" /> */}
         </div>
         <div style={{ overflow: 'auto', height: 'calc(100vh - 120px)', flex: 1 }}>
           <Menu

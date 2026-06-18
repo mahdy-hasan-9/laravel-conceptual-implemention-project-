@@ -67,9 +67,7 @@ class Student extends Model
                     ->orWhereHas('studentClass', function ($classQuery) use ($search) {
                         $classQuery->where('name', 'like', "%{$search}%");
                     })
-                    ->orWhereHas('activities', function ($activityQuery) use ($search) {
-                        $activityQuery->where('name', 'like', "%{$search}%");
-                    });
+                    ->orWhereRelation('activities', 'name', 'like', "%{$search}%");
             });
         });
     }

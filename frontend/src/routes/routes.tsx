@@ -8,13 +8,27 @@ import RegisterView from "../views/Authentication/RegisterView ";
 import ForgetPassword from "../views/Authentication/ForgetPasswordView";
 import ResetPassword from "../views/Authentication/ResetPasswordView";
 import { ProtectedRoute, PublicRoute } from "./RouteGuards";
+import StudentView from "../views/Student/StudentView";
+import ProfileView from "../views/Profile/ProfileView";
 
 export const routes = [
     {
         path: "/",
         element: Dashboard,
         layout: DashboardLayout,
-        protected: true, 
+        protected: true,
+    },
+    {
+        path: "/student",
+        element: StudentView,
+        layout: DashboardLayout,
+        protected: true
+    },
+    {
+        path: "/profile",
+        element: ProfileView,
+        layout: DashboardLayout,
+        protected: true
     },
     {
         path: "/login",
@@ -36,13 +50,6 @@ export const routes = [
         element: ResetPassword,
         public: true,
     },
-    {
-        path: "/student",
-        element: Student,
-        layout: DashboardLayout,
-        protected : true  
-    }
-    
 ]
 
 
@@ -61,7 +68,7 @@ export const renderRoutes = (routes: any) => {
                         <Component />
                     </ProtectedRoute>
                 );
-                } else if (route.public) {
+            } else if (route.public) {
                 wrappedElement = (
                     <PublicRoute>
                         <Component />
@@ -72,7 +79,7 @@ export const renderRoutes = (routes: any) => {
             return <Route key={index} path={route.path}
                 element={
                     <Layout>
-                       {wrappedElement}
+                        {wrappedElement}
                     </Layout>
                 } />
         })}

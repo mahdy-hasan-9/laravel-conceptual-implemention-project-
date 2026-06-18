@@ -1,4 +1,4 @@
-import { useEffect, useState, useDeferredValue, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import TableTitle from './TableTitle'
 import TableHeader from './TableHeader'
 import { Pagination, Table, Spin, Input } from 'antd';

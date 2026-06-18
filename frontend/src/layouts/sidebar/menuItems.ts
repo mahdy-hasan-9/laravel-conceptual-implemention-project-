@@ -16,15 +16,21 @@ export const defaultMenuItems: MenuItem[] = [
         link: '/student',
     },
     {
+        key: '3',
+        icon: React.createElement(VideoCameraOutlined),
+        text: 'Profile',
+        link: '/profile',
+    },
+    {
         key: '4',
         icon: React.createElement(VideoCameraOutlined),
         text: 'Videos',
         link: '/videos',
     },
     {
-        key: '3',
+        key: '5',
         icon: React.createElement(UploadOutlined),
         text: 'Upload',
         link: '/upload',
     },
-    ];
+];
