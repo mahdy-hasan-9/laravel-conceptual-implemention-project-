@@ -1,21 +1,47 @@
 import { useState } from 'react';
-import { Form, Button, Row, Col, Card, message, Space } from 'antd';
+import { Form, Button, Row, Col, Card, message, Space, Spin } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import TextInput from '../../components/FormComponents/TextInput';
 import SingleSelectWithSearchInput from '../../components/FormComponents/SingleSelectWithSearchInput';
 import SwitchInput from '../../components/FormComponents/SwitchInput';
 import ImageUpload from '../../components/FormComponents/ImageUpload';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getProfile } from '../../services/authService';
+import toast from 'react-hot-toast';
+
 
 const roleOptions = [
-    { value: 'role-1', label: 'Role 1' },
-    { value: 'role-2', label: 'Role 2' },
-    { value: 'role-3', label: 'Role 3' },
-];
+    { label: 'Admin', value: 'admin' },
+    { label: 'Manager', value: 'manager' },
+    { label: 'Staff', value: 'staff' },
+    { label: 'Student', value: 'student' },
+]
+
+
 
 const ProfileInfo = () => {
+
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
+
+    const { data: profile, isLoading, isError, error } = useQuery({
+        queryKey: ["profile"],
+        queryFn: async () => {
+            const resp = await getProfile();
+            if (resp.status === 200 && resp.success === true) {
+                return resp.data;
+            }
+        },
+        onError: (error: any) => {
+            toast.error(error.message || 'Something went wrong');
+        }
+    });
+
+
+    console.log(profile);
+
+
+
     const queryClient = useQueryClient();
 
     const normFile = (e) => {
@@ -56,6 +82,18 @@ const ProfileInfo = () => {
             setLoading(false);
         }
     };
+
+
+    if (isLoading) {
+        return <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '50vh'
+        }}>
+            <Spin size="large" description="Loading profile..." />
+        </div>
+    }
 
     return (
         <div>
@@ -102,6 +140,7 @@ const ProfileInfo = () => {
                             required={true}
                             showSearch={true}
                             allowClear={true}
+                            initialValue={profile.role}
                         />
                     </Col>
                 </Row>

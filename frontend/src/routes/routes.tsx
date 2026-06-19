@@ -2,7 +2,6 @@ import React from "react";
 import { Route, Routes } from "react-router-dom";
 import Dashboard from "../views/Dashboard";
 import DashboardLayout from "../layouts/DashboardLayout";
-import Student from "../views/Student/StudentView";
 import LoginView from "../views/Authentication/LoginView";
 import RegisterView from "../views/Authentication/RegisterView ";
 import ForgetPassword from "../views/Authentication/ForgetPasswordView";
@@ -51,8 +50,6 @@ export const routes = [
         public: true,
     },
 ]
-
-
 
 
 export const renderRoutes = (routes: any) => {

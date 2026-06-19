@@ -16,10 +16,10 @@ const SwitchInput = ({
     label,
     checkedChildren = 'Active',
     unCheckedChildren = 'Inactive',
-    initialValue = true,
+    initialValue,
     disabled,
     onChange,
-    valuePropName = 'checked'
+    valuePropName = 'value'
 }: SwitchInputProps) => {
     return (
         <Form.Item

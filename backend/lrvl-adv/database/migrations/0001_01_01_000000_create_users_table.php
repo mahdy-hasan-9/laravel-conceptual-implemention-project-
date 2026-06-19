@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('password');
             $table->tinyInteger('is_active')->default(1);
             $table->boolean('accept_terms')->default(false);
+            $table->enum('role', ['admin', 'manager', 'staff', 'student'])->default('student');
             $table->softDeletes();
             $table->rememberToken();
             $table->timestamps();
