@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Form, Button, Row, Col, Card, message, Space, Spin } from 'antd';
+import { Form, Button, Row, Col, Card, message, Spin, Input } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import TextInput from '../../components/FormComponents/TextInput';
 import SingleSelectWithSearchInput from '../../components/FormComponents/SingleSelectWithSearchInput';
 import SwitchInput from '../../components/FormComponents/SwitchInput';
 import ImageUpload from '../../components/FormComponents/ImageUpload';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getProfile, updateProfile } from '../../services/authService';
 import toast from 'react-hot-toast';
 
@@ -18,14 +18,11 @@ const ROLE_OPTIONS = [
 ];
 
 
-
 const ProfileInfo = () => {
 
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
-
     const queryClient = useQueryClient();
-
     const profileQuery = useQuery({
         queryKey: ['profile'],
         queryFn: getProfile,
@@ -70,66 +67,37 @@ const ProfileInfo = () => {
         return e?.fileList;
     };
 
-    // Build FormData helper
-    const buildFormData = (values: any): FormData => {
-        const formData = new FormData();
-        formData.append('id', values.id);
-        formData.append('name', values.name);
-        formData.append('role', values.role);
-        formData.append('is_active', values.is_active ? '1' : '0');
-
-        const currentImage = values.image_url;
-
-        if (currentImage && currentImage.length > 0) {
-            const imageFile = currentImage[0];
-            if (imageFile.originFileObj) {
-                formData.append('image_url', imageFile.originFileObj);
-                formData.append('image_removed', '0');
-            } else {
-                formData.append('image_removed', '0');
+    const handleSubmit = async () => {
+        try {
+            const values = await form.validateFields();
+            setLoading(true);
+            const initialImage = profileQuery.data?.data?.image_url;
+            const currentImage = values.image_url;
+            let image_removed = false;
+            if (initialImage && (!currentImage || currentImage.length === 0)) {
+                image_removed = true;
             }
-        } else {
-            formData.append('image_removed', '1');
-        }
-
-        return formData;
-    };
-
-    // useMutation with FormData
-    const { mutate: updateProfileApi, isPending: isUpdating } = useMutation({
-        mutationFn: (formData: FormData) => updateProfile(formData),
-        onSuccess: (res) => {
-            if (!res.success) {
-                toast.error(res.message || 'Something went wrong');
-                return;
-            }
+            await updateProfile({
+                ...values,
+                image_removed
+            });
             message.success('Profile saved successfully!');
             queryClient.invalidateQueries({
                 queryKey: ['profile'],
             });
-        },
-        onError: (error: any) => {
-            toast.error(error.message || 'Something went wrong');
-        }
-    });
-
-    const handleSubmit = async () => {
-        try {
-            const values = await form.validateFields();
-            const formData = buildFormData(values);
-            console.log(formData);
-
-            updateProfileApi(formData);
         } catch (error: any) {
-            if (error.errorFields) {
-                console.error('Validation failed:', error);
+            console.error('Submission failed:', error);
+            if (error.errors) {
+                toast.error(error.message || 'Validation failed');
             } else {
                 toast.error(error.message || 'Something went wrong');
             }
+        } finally {
+            setLoading(false);
         }
     };
 
-    const isLoading = profileQuery.isLoading || isUpdating;
+    const isLoading = profileQuery.isLoading || loading;
 
     if (isLoading && profileQuery.isLoading) {
         return <div style={{
@@ -151,7 +119,7 @@ const ProfileInfo = () => {
                 autoComplete="off"
             >
                 <Form.Item name="id" hidden>
-                    <input type="hidden" />
+                    <Input type="hidden" />
                 </Form.Item>
 
                 <Card style={{ marginBottom: 24, textAlign: 'center', padding: '16px' }}>
@@ -161,7 +129,7 @@ const ProfileInfo = () => {
                         getValueFromEvent={normFile}
                         style={{ marginBottom: 0 }}
                     >
-                        <ImageUpload maxSize={2} />
+                        <ImageUpload />
                     </Form.Item>
                 </Card>
 
@@ -205,7 +173,7 @@ const ProfileInfo = () => {
                             type="primary"
                             size="large"
                             onClick={handleSubmit}
-                            loading={isUpdating}
+                            loading={loading}
                             icon={<SaveOutlined />}
                         >
                             Save All

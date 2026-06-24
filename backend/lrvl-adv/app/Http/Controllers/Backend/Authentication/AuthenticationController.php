@@ -64,30 +64,22 @@ class AuthenticationController extends Controller
                 'role' => 'sometimes|string',
                 'is_active' => 'sometimes',
             ]);
-
             $user = User::findOrFail($request->input('id'));
-            // Exclude both possible field names
             $data = $request->except(['avatar', 'avatar_removed', 'image_url', 'image_removed']);
-
-            // Handle avatar/image removal
             if ($request->boolean('avatar_removed') || $request->boolean('image_removed')) {
-                if ($user->avatar) {
-                    Storage::disk('public')->delete($user->avatar);
+                if ($user->image_url) {
+                    Storage::disk('public')->delete($user->image_url);
                 }
-                $data['avatar'] = null;
+                $data['image_url'] = null;
             }
-
-            // Handle new image upload - check for actual file
             if ($request->hasFile('avatar') || $request->hasFile('image')) {
-                if ($user->avatar) {
-                    Storage::disk('public')->delete($user->avatar);
+                if ($user->image_url) {
+                    Storage::disk('public')->delete($user->image_url);
                 }
                 $file = $request->file('avatar') ?? $request->file('image');
-                $data['avatar'] = $file->store('avatars', 'public');
+                $data['image_url'] = $file->store('avatars', 'public');
             }
-
             $user->update($data);
-
             return [
                 'success' => true,
                 'status' => 200,

@@ -1,9 +1,69 @@
-
 const API_BASE = 'http://127.0.0.1:8000/api';
 
 export const isAuthenticated = () => {
     return localStorage.getItem('token');
 }
+
+/**
+ * Helper to convert an object to FormData, handling files and arrays.
+ */
+const toFormData = (data: any) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+        const value = data[key];
+        if (value === undefined || value === null) return;
+        
+        // Map image_url (Ant Design file list) to image for backend
+        if (key === 'image_url') {
+            if (Array.isArray(value) && value.length > 0) {
+                const fileObj = value[0].originFileObj;
+                if (fileObj instanceof File) {
+                    formData.append('image', fileObj);
+                }
+            }
+        } else if (Array.isArray(value)) {
+            value.forEach(val => formData.append(`${key}[]`, val));
+        } else if (typeof value === 'boolean') {
+            formData.append(key, value ? '1' : '0');
+        } else {
+            formData.append(key, value);
+        }
+    });
+    return formData;
+};
+
+const request = async (endpoint: string, options: RequestInit = {}) => {
+    const token = isAuthenticated();
+    const headers: any = {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers,
+    };
+
+    if (options.body && !(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers,
+    });
+
+    if (response.status === 401) {
+        localStorage.removeItem('token');
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        const error = new Error(data.message || 'Something went wrong');
+        (error as any).status = response.status;
+        (error as any).errors = data.errors;
+        throw error;
+    }
+
+    return data;
+};
 
 
 export const registerService = async (data: any) => {
@@ -54,42 +114,30 @@ export const loginService = async (data: any) => {
     return resp;
 };
 
-export const getProfile = async () => {
-    const token = isAuthenticated();
-    const res = await fetch(`${API_BASE}/auth/user/profile`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
+export const getProfile = () => request('/auth/user/profile');
+
+
+export const updateProfile = async (values: any) => {
+    const hasNewImage = values.image_url && Array.isArray(values.image_url) && values.image_url.length > 0 && values.image_url[0].originFileObj;
+    const isImageRemoved = values.image_removed === true;
+
+    const data = (hasNewImage || isImageRemoved) ? toFormData(values) : values;
+    let body: any = data;
+    let method = 'PUT';
+
+    if (data instanceof FormData) {
+        data.append('_method', 'PUT');
+        method = 'POST';
+        body = data;
+    } else {
+        body = JSON.stringify(data);
+    }
+
+    return request('/auth/user/profile', {
+        method,
+        body,
     });
-
-    if (res.status == 401) localStorage.removeItem('token');
-
-    const resp = await res.json();
-    return resp;
-}
-
-
-export const updateProfile = async (data: any) => {
-
-    const token = isAuthenticated();
-    const res = await fetch(`${API_BASE}/auth/user/profile`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'multipart/form-data',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(data),
-    });
-
-    if (res.status == 401) localStorage.removeItem('token');
-
-    const resp = await res.json();
-    return resp;
-}
+};
 
 
 export const logoutService = async () => {
