@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'is_active', 'accept_terms'])]
+#[Fillable(['name', 'email', 'password', 'is_active', 'accept_terms', 'image_url', 'image_removed', 'role'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {

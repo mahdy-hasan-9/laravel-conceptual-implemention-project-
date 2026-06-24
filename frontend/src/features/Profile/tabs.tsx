@@ -1,4 +1,4 @@
-import { Input } from "antd";
+import { Button, Input, Select, Switch } from "antd";
 import ProfileInfo from "./ProfileInfo";
 
 const Child2 = () => {
@@ -8,15 +8,20 @@ const Child2 = () => {
                 <Input placeholder="Api Key" />
             </div>
             <div>
-                <select name="" id="">
-                    <option value="">role-1</option>
-                </select>
+                <Select
+                    placeholder="Select a Role"
+                    options={[
+                        { label: "role-1", value: "role-1" },
+                        { label: "role-2", value: "role-2" },
+                        { label: "role-3", value: "role-3" },
+                    ]}
+                />
             </div>
             <div>
-                <switch /> active in-active user ,
+                <Switch /> active in-active user ,
             </div>
             <div>
-                button for save all
+                <Button type="primary">Save</Button>
             </div>
         </div>
     )

@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('email', 255)->unique()->index();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('image_url')->nullable();
+            $table->boolean('image_removed')->default(false);
             $table->tinyInteger('is_active')->default(1);
             $table->boolean('accept_terms')->default(false);
             $table->enum('role', ['admin', 'manager', 'staff', 'student'])->default('student');

@@ -1,13 +1,8 @@
-import React, { Children, useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { RadioChangeEvent, TabsProps } from 'antd';
-import { Input, Radio, Space, Spin, Tabs } from 'antd';
+import { Space, Tabs } from 'antd';
 import Title from 'antd/es/typography/Title';
-import Item from 'antd/es/list/Item';
-import ProfileInfo from './ProfileInfo';
 import { tabs } from './tabs';
-import { useQuery } from '@tanstack/react-query';
-import { getProfile } from '../../services/authService';
-import toast from 'react-hot-toast';
 
 
 const Child1 = () => {

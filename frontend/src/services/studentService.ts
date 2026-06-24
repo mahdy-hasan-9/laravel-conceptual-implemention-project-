@@ -104,9 +104,9 @@ export const getStudentList = async (params: any = {}) => {
 
 export const getStudentDetails = async (id: string) => {
     return request(`/student/rsc/${id}`);
-};  
+};
 
-export const filterStudents = async (values:any) => {
+export const filterStudents = async (values: any) => {
     console.log(values);
 }
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Form, Button, Row, Col, Card, message, Space, Spin } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import TextInput from '../../components/FormComponents/TextInput';
@@ -6,16 +6,16 @@ import SingleSelectWithSearchInput from '../../components/FormComponents/SingleS
 import SwitchInput from '../../components/FormComponents/SwitchInput';
 import ImageUpload from '../../components/FormComponents/ImageUpload';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getProfile } from '../../services/authService';
+import { getProfile, updateProfile } from '../../services/authService';
 import toast from 'react-hot-toast';
 
 
-const roleOptions = [
+const ROLE_OPTIONS = [
     { label: 'Admin', value: 'admin' },
     { label: 'Manager', value: 'manager' },
     { label: 'Staff', value: 'staff' },
     { label: 'Student', value: 'student' },
-]
+];
 
 
 
@@ -24,74 +24,121 @@ const ProfileInfo = () => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
 
-    const { data: profile, isLoading, isError, error } = useQuery({
-        queryKey: ["profile"],
-        queryFn: async () => {
-            const resp = await getProfile();
-            if (resp.status === 200 && resp.success === true) {
-                return resp.data;
+    const queryClient = useQueryClient();
+
+    const profileQuery = useQuery({
+        queryKey: ['profile'],
+        queryFn: getProfile,
+    });
+
+    useEffect(() => {
+        if (profileQuery.data) {
+            const { isPending, isError, data, error, isSuccess } = profileQuery;
+            if (isPending) {
+                console.log("Profile is loading...");
+            } else if (isError) {
+                toast.error(error instanceof Error ? error.message : 'Something went wrong while fetching profile');
+            } else if (isSuccess) {
+                const profileData = Array.isArray(data.data) ? data.data[0] : data.data;
+
+                const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/storage/';
+                const fullImageUrl = profileData.image_url
+                    ? `${BASE_URL}${profileData.image_url}`
+                    : null;
+
+                const imageFileList = fullImageUrl ? [{
+                    uid: '-1',
+                    name: profileData.image_url.split('/').pop() || 'image.jpg',
+                    status: 'done',
+                    url: fullImageUrl,
+                    thumbUrl: fullImageUrl,
+                }] : [];
+
+                form.setFieldsValue({
+                    id: profileData.id,
+                    name: profileData.name,
+                    role: profileData.role,
+                    is_active: profileData.is_active,
+                    image_url: imageFileList,
+                });
             }
+        }
+    }, [profileQuery.data, form]);
+
+    const normFile = (e: any) => {
+        if (Array.isArray(e)) return e;
+        return e?.fileList;
+    };
+
+    // Build FormData helper
+    const buildFormData = (values: any): FormData => {
+        const formData = new FormData();
+        formData.append('id', values.id);
+        formData.append('name', values.name);
+        formData.append('role', values.role);
+        formData.append('is_active', values.is_active ? '1' : '0');
+
+        const currentImage = values.image_url;
+
+        if (currentImage && currentImage.length > 0) {
+            const imageFile = currentImage[0];
+            if (imageFile.originFileObj) {
+                formData.append('image_url', imageFile.originFileObj);
+                formData.append('image_removed', '0');
+            } else {
+                formData.append('image_removed', '0');
+            }
+        } else {
+            formData.append('image_removed', '1');
+        }
+
+        return formData;
+    };
+
+    // useMutation with FormData
+    const { mutate: updateProfileApi, isPending: isUpdating } = useMutation({
+        mutationFn: (formData: FormData) => updateProfile(formData),
+        onSuccess: (res) => {
+            if (!res.success) {
+                toast.error(res.message || 'Something went wrong');
+                return;
+            }
+            message.success('Profile saved successfully!');
+            queryClient.invalidateQueries({
+                queryKey: ['profile'],
+            });
         },
         onError: (error: any) => {
             toast.error(error.message || 'Something went wrong');
         }
     });
 
-
-    console.log(profile);
-
-
-
-    const queryClient = useQueryClient();
-
-    const normFile = (e) => {
-        if (Array.isArray(e)) return e;
-        return e?.fileList;
-    };
-
-    // Replace with your actual API call
-    const saveProfile = async (values) => {
-        // return await api.saveProfile(values);
-        return new Promise((resolve) => setTimeout(resolve, 1000));
-    };
-
-    const { mutate: saveProfileApi } = useMutation({
-        mutationFn: saveProfile,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['profile'] });
-            message.success('Profile saved successfully!');
-            form.resetFields();
-        },
-        onError: (error) => {
-            message.error(error?.message || 'Something went wrong');
-        }
-    });
-
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
-            setLoading(true);
-            saveProfileApi(values);
-        } catch (error) {
+            const formData = buildFormData(values);
+            console.log(formData);
+
+            updateProfileApi(formData);
+        } catch (error: any) {
             if (error.errorFields) {
                 console.error('Validation failed:', error);
             } else {
-                console.error('API error:', error);
+                toast.error(error.message || 'Something went wrong');
             }
-        } finally {
-            setLoading(false);
         }
     };
 
+    const isLoading = profileQuery.isLoading || isUpdating;
 
-    if (isLoading) {
+    if (isLoading && profileQuery.isLoading) {
         return <div style={{
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             height: '50vh'
         }}>
-            <Spin size="large" description="Loading profile..." />
+            <Spin size="large" />
         </div>
     }
 
@@ -102,30 +149,28 @@ const ProfileInfo = () => {
                 layout="vertical"
                 requiredMark="optional"
                 autoComplete="off"
-                initialValues={{
-                    status: true,
-                }}
             >
-                {/* Profile Image Upload */}
+                <Form.Item name="id" hidden>
+                    <input type="hidden" />
+                </Form.Item>
+
                 <Card style={{ marginBottom: 24, textAlign: 'center', padding: '16px' }}>
                     <Form.Item
-                        name="avatar"
-                        valuePropName="fileList"
+                        name="image_url"
+                        valuePropName="value"
                         getValueFromEvent={normFile}
-                        rules={[{ required: true, message: 'Please upload profile image!' }]}
                         style={{ marginBottom: 0 }}
                     >
-                        <ImageUpload name="avatar" maxSize={2} />
+                        <ImageUpload maxSize={2} />
                     </Form.Item>
                 </Card>
 
                 <Row gutter={16}>
                     <Col xs={24} md={12}>
                         <TextInput
-                            name="username"
+                            name="name"
                             label="User Name"
                             placeholder="Enter user name"
-                            required={true}
                             min={3}
                             max={50}
                         />
@@ -135,12 +180,10 @@ const ProfileInfo = () => {
                         <SingleSelectWithSearchInput
                             name="role"
                             label="Role"
-                            options={roleOptions}
+                            options={ROLE_OPTIONS}
                             placeholder="Select a role"
-                            required={true}
                             showSearch={true}
                             allowClear={true}
-                            initialValue={profile.role}
                         />
                     </Col>
                 </Row>
@@ -148,11 +191,10 @@ const ProfileInfo = () => {
                 <Row gutter={16}>
                     <Col xs={24} md={12}>
                         <SwitchInput
-                            name="status"
+                            name="is_active"
                             label="User Status"
                             checkedChildren="Active"
                             unCheckedChildren="Inactive"
-                            initialValue={true}
                         />
                     </Col>
                 </Row>
@@ -163,7 +205,7 @@ const ProfileInfo = () => {
                             type="primary"
                             size="large"
                             onClick={handleSubmit}
-                            loading={loading}
+                            loading={isUpdating}
                             icon={<SaveOutlined />}
                         >
                             Save All

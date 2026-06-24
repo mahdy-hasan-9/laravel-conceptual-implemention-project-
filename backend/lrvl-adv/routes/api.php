@@ -23,6 +23,7 @@ Route::prefix('auth')->group(function () {
 
         Route::group(['prefix' => 'user'], function () {
             Route::get('/profile', [AuthenticationController::class, 'user']);
+            Route::put('/profile', [AuthenticationController::class, 'update']);
             Route::post('/logout', [AuthenticationController::class, 'logout']);
         });
     });

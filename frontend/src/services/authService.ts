@@ -55,34 +55,55 @@ export const loginService = async (data: any) => {
 };
 
 export const getProfile = async () => {
-     const token = isAuthenticated();
-     const res = await fetch(`${API_BASE}/auth/user/profile`, {
+    const token = isAuthenticated();
+    const res = await fetch(`${API_BASE}/auth/user/profile`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization' : `Bearer ${token}`
+            'Authorization': `Bearer ${token}`
         },
     });
 
-    if(res.status == 401) localStorage.removeItem('token');
-    
+    if (res.status == 401) localStorage.removeItem('token');
+
     const resp = await res.json();
-    return resp ; 
+    return resp;
 }
+
+
+export const updateProfile = async (data: any) => {
+
+    const token = isAuthenticated();
+    const res = await fetch(`${API_BASE}/auth/user/profile`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (res.status == 401) localStorage.removeItem('token');
+
+    const resp = await res.json();
+    return resp;
+}
+
 
 export const logoutService = async () => {
     const token = isAuthenticated();
-    if(token != null){
-    const res = await fetch(`${API_BASE}/auth/user/logout`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization' : `Bearer ${token}`
-        },
-    });
+    if (token != null) {
+        const res = await fetch(`${API_BASE}/auth/user/logout`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+        });
         const resp = await res.json();
-        return resp ; 
+        return resp;
     }
 }
