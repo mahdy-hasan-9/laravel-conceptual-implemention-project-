@@ -8,7 +8,7 @@ interface ImageUploadProps {
     imageUrl?: string;
 }
 
-const ImageUpload = ({ value, onChange, imageUrl }) => {
+const ImageUpload = ({ value, onChange, imageUrl }: ImageUploadProps) => {
     const [fileList, setFileList] = useState<UploadFile[]>([]);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewImage, setPreviewImage] = useState('');

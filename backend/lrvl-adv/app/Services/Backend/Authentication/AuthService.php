@@ -4,6 +4,8 @@ namespace App\Services\Backend\Authentication;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Exception;
 
 class AuthService
 {
@@ -79,5 +81,44 @@ class AuthService
             'status' => 200,
             'message' => 'Logout successful.',
         ];
+    }
+
+    public function update(int $id, array $data): array
+    {
+        try {
+            $user = User::findOrFail($id);
+            
+            $updateData = array_diff_key($data, array_flip(['avatar', 'avatar_removed', 'image_url', 'image_removed']));
+
+            if (request()->boolean('avatar_removed') || request()->boolean('image_removed')) {
+                if ($user->image_url) {
+                    Storage::disk('public')->delete($user->image_url);
+                }
+                $updateData['image_url'] = null;
+            }
+
+            if (request()->hasFile('avatar') || request()->hasFile('image')) {
+                if ($user->image_url) {
+                    Storage::disk('public')->delete($user->image_url);
+                }
+                $file = request()->file('avatar') ?? request()->file('image');
+                $updateData['image_url'] = $file->store('avatars', 'public');
+            }
+
+            $user->update($updateData);
+
+            return [
+                'success' => true,
+                'status' => 200,
+                'message' => 'User profile updated successfully.',
+                'data' => ['user' => $user]
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'status' => 500,
+                'message' => 'Failed to update user profile: ' . $e->getMessage(),
+            ];
+        }
     }
 }

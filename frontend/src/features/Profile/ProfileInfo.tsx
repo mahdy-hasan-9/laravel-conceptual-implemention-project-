@@ -1,14 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Form, Button, Row, Col, Card, message, Spin, Input } from 'antd';
+import { Form, Button, Row, Col, Card, Spin, Input } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import TextInput from '../../components/FormComponents/TextInput';
 import SingleSelectWithSearchInput from '../../components/FormComponents/SingleSelectWithSearchInput';
 import SwitchInput from '../../components/FormComponents/SwitchInput';
 import ImageUpload from '../../components/FormComponents/ImageUpload';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getProfile, updateProfile } from '../../services/authService';
 import toast from 'react-hot-toast';
-
+import { useEffect } from 'react';
 
 const ROLE_OPTIONS = [
     { label: 'Admin', value: 'admin' },
@@ -17,97 +16,77 @@ const ROLE_OPTIONS = [
     { label: 'Student', value: 'student' },
 ];
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/storage/';
 
 const ProfileInfo = () => {
-
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
     const queryClient = useQueryClient();
-    const profileQuery = useQuery({
+
+    const { data: profile, isLoading: isProfileLoading } = useQuery({
         queryKey: ['profile'],
         queryFn: getProfile,
+        select: (response) => {
+            const profileData = Array.isArray(response.data) ? response.data[0] : response.data;
+
+            const fullImageUrl = profileData?.image_url ? `${BASE_URL}${profileData.image_url}` : null;
+            const imageFileList = fullImageUrl ? [{
+                uid: '-1',
+                name: profileData.image_url.split('/').pop() || 'image.jpg',
+                status: 'done',
+                url: fullImageUrl,
+                thumbUrl: fullImageUrl,
+            }] : [];
+
+            return { ...profileData, imageFileList };
+        },
+    });
+    useEffect(() => {
+        if (profile) {
+            form.setFieldsValue({
+                id: profile.id,
+                name: profile.name,
+                role: profile.role,
+                is_active: profile.is_active,
+                image_url: profile.imageFileList,
+            });
+        }
+    }, [profile, form]);
+    const { mutate: submitProfile, isPending: isUpdating } = useMutation({
+        mutationFn: updateProfile,
+        onSuccess: () => {
+            toast.success('Profile saved successfully!');
+            queryClient.invalidateQueries({ queryKey: ['profile'] });
+        },
+        onError: (error: any) => {
+            toast.error(error?.response?.data?.message || error.message || 'Something went wrong');
+        }
     });
 
-    useEffect(() => {
-        if (profileQuery.data) {
-            const { isPending, isError, data, error, isSuccess } = profileQuery;
-            if (isPending) {
-                console.log("Profile is loading...");
-            } else if (isError) {
-                toast.error(error instanceof Error ? error.message : 'Something went wrong while fetching profile');
-            } else if (isSuccess) {
-                const profileData = Array.isArray(data.data) ? data.data[0] : data.data;
-
-                const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/storage/';
-                const fullImageUrl = profileData.image_url
-                    ? `${BASE_URL}${profileData.image_url}`
-                    : null;
-
-                const imageFileList = fullImageUrl ? [{
-                    uid: '-1',
-                    name: profileData.image_url.split('/').pop() || 'image.jpg',
-                    status: 'done',
-                    url: fullImageUrl,
-                    thumbUrl: fullImageUrl,
-                }] : [];
-
-                form.setFieldsValue({
-                    id: profileData.id,
-                    name: profileData.name,
-                    role: profileData.role,
-                    is_active: profileData.is_active,
-                    image_url: imageFileList,
-                });
-            }
-        }
-    }, [profileQuery.data, form]);
-
-    const normFile = (e: any) => {
-        if (Array.isArray(e)) return e;
-        return e?.fileList;
-    };
+    const normFile = (e: any) => (Array.isArray(e) ? e : e?.fileList);
 
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
-            setLoading(true);
-            const initialImage = profileQuery.data?.data?.image_url;
+            const initialImage = profile?.image_url;
             const currentImage = values.image_url;
-            let image_removed = false;
-            if (initialImage && (!currentImage || currentImage.length === 0)) {
-                image_removed = true;
-            }
-            await updateProfile({
+
+            const image_removed = !!(initialImage && (!currentImage || currentImage.length === 0));
+
+            submitProfile({
                 ...values,
                 image_removed
             });
-            message.success('Profile saved successfully!');
-            queryClient.invalidateQueries({
-                queryKey: ['profile'],
-            });
-        } catch (error: any) {
-            console.error('Submission failed:', error);
-            if (error.errors) {
-                toast.error(error.message || 'Validation failed');
-            } else {
-                toast.error(error.message || 'Something went wrong');
-            }
-        } finally {
-            setLoading(false);
+        } catch (validationError) {
+            toast.error('Please check the required fields');
         }
     };
 
-    const isLoading = profileQuery.isLoading || loading;
-
-    if (isLoading && profileQuery.isLoading) {
-        return <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '50vh'
-        }}>
-            <Spin size="large" />
-        </div>
+    if (isProfileLoading) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                <Spin size="large" />
+            </div>
+        );
     }
 
     return (
@@ -150,8 +129,8 @@ const ProfileInfo = () => {
                             label="Role"
                             options={ROLE_OPTIONS}
                             placeholder="Select a role"
-                            showSearch={true}
-                            allowClear={true}
+                            showSearch
+                            allowClear
                         />
                     </Col>
                 </Row>
@@ -173,7 +152,7 @@ const ProfileInfo = () => {
                             type="primary"
                             size="large"
                             onClick={handleSubmit}
-                            loading={loading}
+                            loading={isUpdating}
                             icon={<SaveOutlined />}
                         >
                             Save All

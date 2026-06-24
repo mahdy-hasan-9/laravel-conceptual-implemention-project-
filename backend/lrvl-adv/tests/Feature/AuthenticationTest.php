@@ -10,6 +10,7 @@ test('user can register', function () {
         'name' => 'John Doe',
         'email' => 'john@example.com',
         'password' => 'Password123',
+        'accept_terms' => true,
     ]);
 
     $response->assertStatus(201)
@@ -18,7 +19,7 @@ test('user can register', function () {
             'status',
             'token',
             'message',
-            'necessary_data' => [
+            'data' => [
                 'user' => ['id', 'name', 'email']
             ]
         ]);
@@ -87,14 +88,14 @@ test('user can access protected route with token', function () {
     $token = $user->createToken('test-token')->plainTextToken;
 
     $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-        ->getJson('/api/auth/user');
+        ->getJson('/api/auth/user/profile');
 
     $response->assertStatus(200)
         ->assertJsonPath('data.email', $user->email);
 });
 
 test('user cannot access protected route without token', function () {
-    $response = $this->getJson('/api/auth/user');
+    $response = $this->getJson('/api/auth/user/profile');
 
     $response->assertStatus(401);
 });
@@ -104,7 +105,7 @@ test('user can logout', function () {
     $token = $user->createToken('test-token')->plainTextToken;
 
     $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-        ->postJson('/api/auth/logout');
+        ->postJson('/api/auth/user/logout');
 
     $response->assertStatus(200)
         ->assertJson([
@@ -120,7 +121,31 @@ test('user can logout', function () {
 
     // Verify token is revoked
     $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-        ->getJson('/api/auth/user');
+        ->getJson('/api/auth/user/profile');
     
     $response->assertStatus(401);
+});
+
+test('user can update profile details', function () {
+    $user = User::factory()->create([
+        'name' => 'Original Name',
+    ]);
+    $token = $user->createToken('test-token')->plainTextToken;
+
+    $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        ->putJson('/api/auth/user/profile', [
+            'id' => $user->id,
+            'name' => 'Updated Name',
+        ]);
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'message' => 'User profile updated successfully.',
+        ]);
+
+    $this->assertDatabaseHas('users', [
+        'id' => $user->id,
+        'name' => 'Updated Name',
+    ]);
 });

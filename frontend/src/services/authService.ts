@@ -4,16 +4,12 @@ export const isAuthenticated = () => {
     return localStorage.getItem('token');
 }
 
-/**
- * Helper to convert an object to FormData, handling files and arrays.
- */
+
 const toFormData = (data: any) => {
     const formData = new FormData();
     Object.keys(data).forEach(key => {
         const value = data[key];
         if (value === undefined || value === null) return;
-        
-        // Map image_url (Ant Design file list) to image for backend
         if (key === 'image_url') {
             if (Array.isArray(value) && value.length > 0) {
                 const fileObj = value[0].originFileObj;

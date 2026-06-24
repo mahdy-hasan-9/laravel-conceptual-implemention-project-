@@ -4,9 +4,7 @@ export const isAuthenticated = () => {
     return localStorage.getItem('token');
 }
 
-/**
- * Helper to convert an object to FormData, handling files and arrays.
- */
+
 const toFormData = (data: any) => {
     const formData = new FormData();
     Object.keys(data).forEach(key => {

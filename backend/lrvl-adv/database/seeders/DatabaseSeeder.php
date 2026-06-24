@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             ActivitySeeder::class,
             BookSeeder::class,
             StudentSeeder::class,
+            RoleAndPermissionSeeder::class
         ]);
     }
 }

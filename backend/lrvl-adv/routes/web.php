@@ -5,6 +5,7 @@ use Inertia\Inertia;
 
 Route::inertia('/', 'welcome')->name('home');
 
+
 Route::get('/cart', function () {
     return Inertia::render('cart');
 })->name('cart');
