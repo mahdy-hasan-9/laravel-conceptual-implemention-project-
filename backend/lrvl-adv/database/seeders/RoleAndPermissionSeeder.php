@@ -13,10 +13,10 @@ class RoleAndPermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            'view articles',
-            'create articles',
-            'edit articles',
-            'delete articles',
+            'view-articles',
+            'create-articles',
+            'edit-articles',
+            'delete-articles',
         ];
 
         foreach ($permissions as $permission) {
@@ -29,9 +29,9 @@ class RoleAndPermissionSeeder extends Seeder
         $studentRole = Role::firstOrCreate(['name' => 'student', 'guard_name' => 'web']);
 
         $adminRole->syncPermissions(Permission::all());
-        $managerRole->syncPermissions(['view articles', 'create articles', 'edit articles']);
-        $staffRole->syncPermissions(['view articles', 'create articles']);
-        $studentRole->syncPermissions(['view articles']);
+        $managerRole->syncPermissions(['view-articles', 'create-articles', 'edit-articles']);
+        $staffRole->syncPermissions(['view-articles', 'create-articles']);
+        $studentRole->syncPermissions(['view-articles']);
 
 
         $admin = User::where('role', 'admin')->first();

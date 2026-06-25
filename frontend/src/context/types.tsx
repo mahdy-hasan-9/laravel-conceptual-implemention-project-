@@ -8,6 +8,15 @@ export interface User {
 }
 
 
+export interface Permission {
+    name: string;
+}
+
+export interface Role {
+    name: string;
+    permissions?: Permission[];
+}
+
 export interface ProfileData {
     email: string;
     id: number;
@@ -22,6 +31,7 @@ export interface ProfileData {
         url: string;
         thumbUrl: string;
     }>;
+    roles?: Role[];
 }
 
 export interface AuthContextType {
@@ -30,7 +40,9 @@ export interface AuthContextType {
     refetchProfile: () => void;
     logoutHandler: () => void;
     loginHandlerMutation: UseMutationResult<any, unknown, any, unknown>;
-    // Register mutation result for user registration flow
     registerHandlerMutation: UseMutationResult<any, unknown, any, unknown>;
-
+    hasPermission: (permission: string) => boolean;
+    hasRole: (role: string) => boolean;
+    hasAnyPermission: (permissions: string[]) => boolean;
+    hasAllPermissions: (permissions: string[]) => boolean;
 }

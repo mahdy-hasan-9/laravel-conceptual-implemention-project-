@@ -50,9 +50,10 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     }
   }, [mobile]);
 
-  const { profile, logoutHandler } = useContext(AuthContext);
+  const { profile, logoutHandler, refetchProfile } = useContext(AuthContext);
 
   useEffect(() => {
+    refetchProfile();
     if (profile) {
       setUser({
         name: profile.name,

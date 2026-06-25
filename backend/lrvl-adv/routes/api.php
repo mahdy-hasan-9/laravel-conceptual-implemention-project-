@@ -35,6 +35,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/class', [ClassController::class, 'classList']);
         Route::get('/activity', [ActivityController::class, 'activities']);
         Route::get('/books', [BookController::class, 'bookList']);
-        Route::resource('rsc',StudentController::class);
+        Route::resource('rsc', StudentController::class);
     });
 });

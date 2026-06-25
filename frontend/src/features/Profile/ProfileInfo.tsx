@@ -9,6 +9,7 @@ import { updateProfile } from '../../services/authService';
 import toast from 'react-hot-toast';
 import { useContext, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { PermissionGuard, RoleGuard } from '../../layouts/PermissionGuard';
 
 const ROLE_OPTIONS = [
     { label: 'Admin', value: 'admin' },
@@ -105,16 +106,32 @@ const ProfileInfo = () => {
                         />
                     </Col>
 
-                    <Col xs={24} md={12}>
-                        <SingleSelectWithSearchInput
-                            name="role"
-                            label="Role"
-                            options={ROLE_OPTIONS}
-                            placeholder="Select a role"
-                            showSearch
-                            allowClear
-                        />
-                    </Col>
+
+                    <RoleGuard role="admin">
+                        <Col xs={24} md={12}>
+                            <SingleSelectWithSearchInput
+                                name="role"
+                                label="Role"
+                                options={ROLE_OPTIONS}
+                                placeholder="Select a role"
+                                showSearch
+                                allowClear
+                            />
+                        </Col>
+                    </RoleGuard>
+
+                    {/* <PermissionGuard permission="edit-articles">
+                        <Col xs={24} md={12}>
+                            <SingleSelectWithSearchInput
+                                name="role"
+                                label="Role"
+                                options={ROLE_OPTIONS}
+                                placeholder="Select a role"
+                                showSearch
+                                allowClear
+                            />
+                        </Col>
+                    </PermissionGuard> */}
                 </Row>
 
                 <Row gutter={16}>
