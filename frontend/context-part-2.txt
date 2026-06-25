@@ -1,0 +1,290 @@
+# 📦 context-part-2.txt – Roadmap for User Profile & Student CRUD Contexts
+
+## 🎯 Goal
+Create **global React contexts** that expose:
+- The current authenticated **user profile** (read‑only & updateable).
+- Full **Student CRUD** state (list, pagination, selected item, loading/error flags).
+- Helper actions that wrap the existing `studentService.ts` and `authService.ts` calls.
+- Optional hooks for consuming these contexts cleanly.
+
+> **Why a second file?**
+`context.txt` already showed a basic AuthContext. This file extends the idea with two more domain‑specific contexts, keeping the mental model and file organization tidy.
+
+---
+
+## 1️⃣ ProfileContext (User Profile)
+### Types
+```ts
+// src/types/profile.ts (conceptual, not created yet)
+export interface Profile {
+  id: number;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  // any extra fields returned by /profile endpoint
+}
+
+export interface ProfileContextProps {
+  profile: Profile | null;               // current profile data
+  loading: boolean;                      // true while fetching/updating
+  error: string | null;                  // fetch or update failure message
+  refresh: () => Promise<void>;          // re‑fetch from backend
+  update: (data: Partial<Profile>) => Promise<void>; // patch profile
+}
+```
+### Provider Sketch
+```tsx
+export const ProfileProvider = ({ children }: { children: ReactNode }) => {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const resp = await authService.getProfile(); // assumed endpoint
+      if (resp.success) setProfile(resp.data);
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const update = async (data: Partial<Profile>) => {
+    setLoading(true);
+    try {
+      const resp = await authService.updateProfile(data);
+      if (resp.success) setProfile(resp.data);
+      message.success('Profile updated');
+    } catch (e: any) {
+      setError(e.message ?? 'Update failed');
+      message.error(e.message ?? 'Update failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load once on mount (if token exists)
+  useEffect(() => { if (localStorage.getItem('token')) refresh(); }, []);
+
+  return (
+    <ProfileContext.Provider value={{ profile, loading, error, refresh, update }}>
+      {children}
+    </ProfileContext.Provider>
+  );
+};
+```
+### Hook
+```ts
+export const useProfile = () => useContext(ProfileContext);
+```
+---
+
+## 2️⃣ StudentContext (CRUD for Students)
+### Types
+```ts
+export interface Student {
+  id: number;
+  name: string;
+  age: number;
+  gender: 'male' | 'female';
+  class_id: number;
+  is_active: boolean;
+  // … other fields (activities, books, image etc.)
+}
+
+export interface StudentContextProps {
+  students: Student[];                     // current list (could be paginated)
+  total: number;                         // total count from backend
+  loading: boolean;                      // true while any list or mutation is pending
+  error: string | null;
+  fetchAll: (params?: { page?: number; perPage?: number }) => Promise<void>;
+  create: (data: Omit<Student, 'id'>) => Promise<void>;
+  update: (id: number, data: Partial<Student>) => Promise<void>;
+  remove: (id: number) => Promise<void>;
+  getById: (id: number) => Student | undefined;
+}
+```
+### Provider Sketch
+```tsx
+export const StudentProvider = ({ children }: { children: ReactNode }) => {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient(); // optional, if you mix with React‑Query
+
+  const fetchAll = async (params = {}) => {
+    setLoading(true);
+    try {
+      const resp = await studentService.getStudents(params);
+      if (resp.success) {
+        setStudents(resp.data.data);
+        setTotal(resp.data.total);
+      }
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to load students');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const create = async (data: Omit<Student, 'id'>) => {
+    setLoading(true);
+    try {
+      const resp = await studentService.createStudent(data);
+      if (resp.success) {
+        // optimistic approach – prepend or refetch list
+        setStudents((prev) => [resp.data, ...prev]);
+        message.success('Student created');
+        queryClient.invalidateQueries({ queryKey: ['students'] });
+      }
+    } catch (e: any) {
+      setError(e.message ?? 'Create failed');
+      message.error(e.message ?? 'Create failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const update = async (id: number, data: Partial<Student>) => {
+    setLoading(true);
+    try {
+      const resp = await studentService.updateStudent(id, data);
+      if (resp.success) {
+        setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, ...data } : s));
+        message.success('Student updated');
+        queryClient.invalidateQueries({ queryKey: ['students'] });
+      }
+    } catch (e: any) {
+      setError(e.message ?? 'Update failed');
+      message.error(e.message ?? 'Update failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const remove = async (id: number) => {
+    setLoading(true);
+    try {
+      const resp = await studentService.deleteStudent(id);
+      if (resp.success) {
+        setStudents((prev) => prev.filter((s) => s.id !== id));
+        message.success('Student removed');
+        queryClient.invalidateQueries({ queryKey: ['students'] });
+      }
+    } catch (e: any) {
+      setError(e.message ?? 'Delete failed');
+      message.error(e.message ?? 'Delete failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getById = (id: number) => students.find((s) => s.id === id);
+
+  return (
+    <StudentContext.Provider
+      value={{ students, total, loading, error, fetchAll, create, update, remove, getById }}
+    >
+      {children}
+    </StudentContext.Provider>
+  );
+};
+```
+### Hook
+```ts
+export const useStudent = () => useContext(StudentContext);
+```
+---
+
+## 3️⃣ Combined AppProviders (optional composition)
+If you want a single entry point for all contexts, create **AppProviders.tsx**:
+```tsx
+export const AppProviders = ({ children }: { children: ReactNode }) => (
+  <AuthProvider>
+    <ProfileProvider>
+      <StudentProvider>
+        {children}
+      </StudentProvider>
+    </ProfileProvider>
+  </AuthProvider>
+);
+);
+```
+Wrap the root of the app with `<AppProviders>`.
+---
+
+## 4️⃣ Usage Examples (no real code, just snippets for reference)
+### Profile Form (inside any component)
+```tsx
+const ProfileForm = () => {
+  const { profile, loading, error, update } = useProfile();
+  const [form] = Form.useForm();
+
+  useEffect(() => {
+    if (profile) form.setFieldsValue(profile);
+  }, [profile]);
+
+  const onFinish = async (values: any) => {
+    await update(values);
+  };
+
+  return (
+    <Form form={form} layout="vertical" onFinish={onFinish}>
+      <TextInput name="name" label="Name" />
+      <TextInput name="email" label="Email" />
+      <Button type="primary" htmlType="submit" loading={loading}>Save</Button>
+    </Form>
+  );
+};
+```
+### Student List Page (leveraging StudentContext)
+```tsx
+const StudentList = () => {
+  const { students, loading, fetchAll, total } = useStudent();
+  const [page, setPage] = useState(1);
+
+  useEffect(() => { fetchAll({ page, perPage: 10 }); }, [page]);
+
+  return (
+    <Spin spinning={loading}>
+      <List dataSource={students} renderItem={item => (
+        <List.Item actions={[<EditButton id={item.id} />, <DeleteButton id={item.id} />]}>
+          {item.name} – {item.age} yrs
+        </List.Item>
+      )} />
+      <Pagination current={page} total={total} onChange={setPage} />
+    </Spin>
+  );
+};
+```
+---
+
+## 🛠️ Implementation Checklist (for you to follow when you copy the snippets)
+- [ ] Create `src/contexts/ProfileContext.tsx` using the **Provider Sketch** above.
+- [ ] Create `src/contexts/StudentContext.tsx` using the **Provider Sketch** above.
+- [ ] Export them from `src/contexts/index.ts`.
+- [ ] Optionally create `src/contexts/AppProviders.tsx` to compose all providers.
+- [ ] Wrap the root (`main.tsx`/`index.tsx`) with `<AppProviders>`.
+- [ ] Replace any local state handling in existing components (`ProfileInfo.tsx`, `EditDrawerForm.tsx`, `AddDrawerForm.tsx`) with the new hooks (`useProfile`, `useStudent`).
+- [ ] Ensure `studentService.ts` and `authService.ts` expose the necessary API calls (`getProfile`, `updateProfile`, `getStudents`, `createStudent`, `updateStudent`, `deleteStudent`).
+- [ ] Test each flow:
+  - Profile load → UI shows current user data.
+  - Profile update → toast appears, state updates.
+  - Student list pagination → works.
+  - CRUD actions → list updates & toasts.
+- [ ] (Optional) Add **React Query** integration for caching if you prefer, but the context already holds the data.
+
+---
+
+## 🎨 Design / Aesthetic Tips for Context‑driven UI
+- Show a **global spinner** (`Spin`) while any context `loading` flag is true (e.g., overlay on the main layout).
+- Keep **error alerts** simple: `message.error(error)` inside each context action, so UI components don’t have to duplicate error handling.
+- For **optimistic UI**, update local state before the API resolves, then revert on failure – this feels snappy.
+- Use **Ant Design’s `Avatar` + `Dropdown`** in the nav bar to expose profile/logout actions pulled from `useProfile`.
+
+---
+
+*All code above is illustrative. Copy the snippets into the appropriate files, adapt imports (e.g., `@/services/...`), and you’ll have a clean, scalable global‑state layer for both the user profile and the student CRUD domain.*

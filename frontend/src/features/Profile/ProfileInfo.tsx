@@ -4,10 +4,11 @@ import TextInput from '../../components/FormComponents/TextInput';
 import SingleSelectWithSearchInput from '../../components/FormComponents/SingleSelectWithSearchInput';
 import SwitchInput from '../../components/FormComponents/SwitchInput';
 import ImageUpload from '../../components/FormComponents/ImageUpload';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProfile, updateProfile } from '../../services/authService';
+import { useMutation, } from '@tanstack/react-query';
+import { updateProfile } from '../../services/authService';
 import toast from 'react-hot-toast';
-import { useEffect } from 'react';
+import { useContext, useEffect } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 
 const ROLE_OPTIONS = [
     { label: 'Admin', value: 'admin' },
@@ -16,30 +17,13 @@ const ROLE_OPTIONS = [
     { label: 'Student', value: 'student' },
 ];
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/storage/';
-
 const ProfileInfo = () => {
     const [form] = Form.useForm();
-    const queryClient = useQueryClient();
-
-    const { data: profile, isLoading: isProfileLoading } = useQuery({
-        queryKey: ['profile'],
-        queryFn: getProfile,
-        select: (response) => {
-            const profileData = Array.isArray(response.data) ? response.data[0] : response.data;
-
-            const fullImageUrl = profileData?.image_url ? `${BASE_URL}${profileData.image_url}` : null;
-            const imageFileList = fullImageUrl ? [{
-                uid: '-1',
-                name: profileData.image_url.split('/').pop() || 'image.jpg',
-                status: 'done',
-                url: fullImageUrl,
-                thumbUrl: fullImageUrl,
-            }] : [];
-
-            return { ...profileData, imageFileList };
-        },
-    });
+    const authContext = useContext(AuthContext)
+    if (!authContext) {
+        throw new Error('Something Went Wrong!');
+    }
+    const { profile, isProfileLoading, refetchProfile } = authContext;
     useEffect(() => {
         if (profile) {
             form.setFieldsValue({
@@ -51,11 +35,14 @@ const ProfileInfo = () => {
             });
         }
     }, [profile, form]);
+
+
+
     const { mutate: submitProfile, isPending: isUpdating } = useMutation({
         mutationFn: updateProfile,
         onSuccess: () => {
             toast.success('Profile saved successfully!');
-            queryClient.invalidateQueries({ queryKey: ['profile'] });
+            refetchProfile();
         },
         onError: (error: any) => {
             toast.error(error?.response?.data?.message || error.message || 'Something went wrong');

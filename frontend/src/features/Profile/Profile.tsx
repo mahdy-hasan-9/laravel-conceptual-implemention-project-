@@ -31,12 +31,9 @@ const Profile = () => {
 
     const [tabPlacement, setTabPlacement] = useState<TabsProps['tabPlacement']>('start');
 
-
-
     const changeTabPlacement = (e: RadioChangeEvent) => {
         setTabPlacement(e.target.value);
     };
-
 
     return (
         <>

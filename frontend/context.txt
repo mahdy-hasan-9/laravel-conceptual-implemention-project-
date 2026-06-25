@@ -1,0 +1,278 @@
+# 📚 React Authentication Context – Easy & Professional Guide
+
+## 🎯 Goal
+Create a **global React Context** that centralises all authentication logic (login, logout, register, password reset) so any component can access the user, token and helper functions without prop‑drilling.
+
+## 📂 Recommended Folder Layout (inside `src/`)
+```
+src/
+├─ api/                # thin wrapper around axios/fetch + token handling
+├─ context/            # <-- NEW – all context files live here
+│   ├─ AuthContext.tsx
+│   ├─ useAuth.ts       # custom hook for easy consumption
+│   └─ index.ts         # re‑export helpers
+├─ features/
+│   └─ Authentication/  # existing Register, Login, ForgetPassword, ResetPassword
+├─ services/           # existing authService (loginService, registerService…)
+└─ main.tsx            # entry point – will wrap <App/> with <AuthProvider>
+```
+
+## 1️⃣ Install runtime dependencies (if not present)
+```bash
+npm i axios jwt-decode   # axios for HTTP, jwt-decode to read token expiry (optional)
+```
+> **Why?** Keeps the Context tiny – it only calls this client for login, register, etc.
+
+## 2️⃣ API client (`src/api/client.ts`)
+```tsx
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  withCredentials: true, // Laravel Sanctum needs the CSRF cookie
+});
+
+// Attach token automatically
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
+  }
+  return config;
+});
+
+export default api;
+```
+
+## 3️⃣ AuthContext (`src/context/AuthContext.tsx`)
+```tsx
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import api from '../api/client';
+import jwtDecode from 'jwt-decode';
+
+// ---- Types ----------------------------------------------------------
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  // add any extra fields returned by `/api/user`
+}
+
+type DecodedToken = { exp: number; sub: number; [key: string]: any };
+
+export interface AuthContextProps {
+  user: User | null;
+  token: string | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  register: (data: RegisterFormData) => Promise<void>;
+  forgetPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, data: ResetFormData) => Promise<void>;
+}
+
+export const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+
+// ---- Provider -------------------------------------------------------
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // ----- Helper: fetch current user -------------------------------
+  const fetchUser = async (jwt: string) => {
+    try {
+      const { data } = await api.get('/user'); // Laravel Sanctum route
+      setUser(data);
+    } catch (err) {
+      console.error('Failed to fetch user', err);
+      setUser(null);
+    }
+  };
+
+  // ----- Login ---------------------------------------------------
+  const login = async (email: string, password: string) => {
+    const { data } = await api.post('/login', { email, password });
+    const receivedToken = data.token; // adjust if your backend uses a different key
+    localStorage.setItem('token', receivedToken);
+    setToken(receivedToken);
+    await fetchUser(receivedToken);
+  };
+
+  // ----- Register ------------------------------------------------
+  const register = async (formData: RegisterFormData) => {
+    const { data } = await api.post('/register', formData);
+    // after a successful register you often want to auto‑login
+    await login(formData.email, formData.password);
+  };
+
+  // ----- Forget password (send reset email) ----------------------
+  const forgetPassword = async (email: string) => {
+    await api.post('/forgot-password', { email });
+  };
+
+  // ----- Reset password (use token from email link) --------------
+  const resetPassword = async (resetToken: string, formData: ResetFormData) => {
+    await api.post('/reset-password', { token: resetToken, ...formData });
+  };
+
+  // ----- Logout --------------------------------------------------
+  const logout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+    api.post('/logout').catch(() => {}); // optional backend call
+  };
+
+  // ----- Initialise from persisted token -------------------------
+  useEffect(() => {
+    const stored = localStorage.getItem('token');
+    if (stored) {
+      try {
+        const decoded = jwtDecode<DecodedToken>(stored);
+        if (decoded.exp * 1000 > Date.now()) {
+          setToken(stored);
+          fetchUser(stored).finally(() => setLoading(false));
+          return;
+        }
+      } catch (_) {}
+    }
+    setLoading(false);
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        logout,
+        register,
+        forgetPassword,
+        resetPassword,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+```
+
+## 4️⃣ Convenience Hook (`src/context/useAuth.ts`)
+```tsx
+import { useContext } from 'react';
+import { AuthContext } from './AuthContext';
+
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return ctx;
+};
+```
+> **Team‑friendly tip** – every component now just `const { user, login, logout } = useAuth();`.
+
+## 5️⃣ Export barrel (`src/context/index.ts`)
+```tsx
+export { AuthProvider } from './AuthContext';
+export { useAuth } from './useAuth';
+```
+
+## 6️⃣ Wire the Provider (`src/main.tsx`)
+```tsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import { AuthProvider } from './context';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </React.StrictMode>
+);
+```
+
+## 7️⃣ Refactor existing pages to use the Context
+### Login page
+```tsx
+import { useAuth } from '../../context';
+
+const Login = () => {
+  const { login, loading } = useAuth();
+  const onSubmit = async (data: LoginFormData) => {
+    await login(data.email, data.password);
+  };
+};
+```
+### Register page
+```tsx
+import { useAuth } from '../../context';
+
+const Register = () => {
+  const { register, loading } = useAuth();
+  const onSubmit = async (data: RegisterFormData) => {
+    await register(data);
+  };
+};
+```
+### Forget / Reset password pages
+Replace direct service calls with `useAuth().forgetPassword(email)` and `useAuth().resetPassword(token, formData)` respectively.
+
+## 8️⃣ Protect routes – a tiny `PrivateRoute` example (React Router v6)
+```tsx
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../context';
+import { Spin } from 'antd';
+
+export const PrivateRoute = () => {
+  const { user, loading } = useAuth();
+  if (loading) return <Spin tip="Loading..." />;
+  return user ? <Outlet /> : <Navigate to="/login" replace />;
+};
+```
+Add it to your routing tree:
+```tsx
+<Route element={<PrivateRoute />}> 
+  <Route path="/profile" element={<ProfileInfo />} />
+  {/* other protected routes */}
+</Route>
+```
+
+## 9️⃣ (Optional) Tie token into **React‑Query** cache
+```tsx
+const { token } = useAuth();
+useQuery(['students', token], fetchStudents);
+```
+When `logout` clears the token, cached queries become stale automatically.
+
+## 📋 Checklist – copy‑paste into your own task list
+- [ ] `npm i axios jwt-decode`
+- [ ] Create `src/api/client.ts`
+- [ ] Add `src/context/AuthContext.tsx`
+- [ ] Add `src/context/useAuth.ts`
+- [ ] Export from `src/context/index.ts`
+- [ ] Wrap `<App/>` with `<AuthProvider>` in `src/main.tsx`
+- [ ] Refactor **Login**, **Register**, **ForgetPassword**, **ResetPassword** to use `useAuth`
+- [ ] Implement `<PrivateRoute>` for protected views
+- [ ] Test the full flow:
+  - Register → auto‑login → token persisted → state restored on refresh
+  - Logout → token cleared → redirect to login
+- [ ] (Optional) Hook React‑Query into the auth token
+
+---
+## 🎨 UI / Aesthetic Recommendations (team‑friendly)
+- Use Ant Design’s `Spin` inside the provider to show a global loading state.
+- Add a top‑right **avatar dropdown** with a `Logout` button for a polished feel.
+- Show success/error **toasts** (`toast.success`, `toast.error`) inside the context methods.
+- Consider a separate `ThemeContext` later; the same pattern works for dark‑mode toggles.
+
+---
+## 📖 Final Note
+All snippets are **drop‑in** – copy them into the indicated files. This `context.txt` file is your single source of truth for the implementation. Follow the checklist, run the app, and you’ll have a clean, scalable authentication layer ready for any React developer on the team.
+
+Happy coding! 🚀
