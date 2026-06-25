@@ -19,11 +19,8 @@ const ROLE_OPTIONS = [
 
 const ProfileInfo = () => {
     const [form] = Form.useForm();
-    const authContext = useContext(AuthContext)
-    if (!authContext) {
-        throw new Error('Something Went Wrong!');
-    }
-    const { profile, isProfileLoading, refetchProfile } = authContext;
+    const { profile, isProfileLoading, refetchProfile } = useContext(AuthContext);
+
     useEffect(() => {
         if (profile) {
             form.setFieldsValue({
@@ -56,9 +53,7 @@ const ProfileInfo = () => {
             const values = await form.validateFields();
             const initialImage = profile?.image_url;
             const currentImage = values.image_url;
-
             const image_removed = !!(initialImage && (!currentImage || currentImage.length === 0));
-
             submitProfile({
                 ...values,
                 image_removed

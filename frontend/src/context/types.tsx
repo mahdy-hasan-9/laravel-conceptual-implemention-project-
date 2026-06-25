@@ -8,6 +8,7 @@ export interface User {
 
 
 export interface ProfileData {
+    email: string;
     id: number;
     name: string;
     role: string;

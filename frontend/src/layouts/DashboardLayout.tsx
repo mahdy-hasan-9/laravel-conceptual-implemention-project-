@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { UserOutlined, UploadOutlined } from '@ant-design/icons';
 import { Layout, Menu, theme, Button } from 'antd';
 import type { MenuProps } from 'antd';
@@ -7,12 +7,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { menuOptions, menuPaths } from './sidebar/menuOption';
 import ProfileAndNotification from './profileAndNotification';
 import toast from 'react-hot-toast';
-import { getProfile, logoutService } from '../services/authService';
+import { logoutService } from '../services/authService';
+import { AuthContext } from '../context/AuthContext';
 
 const { Header, Content, Footer, Sider } = Layout;
-
-
-const access_token = localStorage.getItem('token');
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
@@ -20,7 +18,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     name: '',
     email: '',
   });
-  const [accessToken, setAccessToken] = useState(access_token)
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobile, setMobile] = useState(false);
@@ -57,24 +54,16 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     }
   }, [mobile]);
 
+  const { profile, refetchProfile } = useContext(AuthContext);
+
   useEffect(() => {
-    const profile = async () => {
-      try {
-        const resp = await getProfile();
-        if (resp.status === 200 && resp.success === true) {
-          setUser({
-            name: resp.data.name,
-            email: resp.data.email,
-          });
-        }
-      } catch (error: any) {
-        localStorage.removeItem('token');
-        setAccessToken("");
-        toast.error(error.message || 'Something went wrong');
-      }
-    };
-    profile();
-  }, [access_token]);
+    if (profile) {
+      setUser({
+        name: profile.name,
+        email: profile.email,
+      })
+    }
+  }, [profile]);
 
   const logoutHandler = async () => {
 
