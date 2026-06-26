@@ -5,10 +5,10 @@ import { fetchUserProfile } from './AuthContextMethods/fetchUserProfile';
 import { logoutMutation } from './AuthContextMethods/userAuth';
 import toast from 'react-hot-toast';
 import { loginService, registerService } from '../services/authService';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
-// Types for better type safety
+
 interface Permission {
     name: string;
 }
@@ -20,6 +20,7 @@ interface Role {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+
 const handleMutationError = (error: any) => {
     if (error?.status !== 422) {
         toast.error(error?.message || 'Something went wrong');
@@ -28,6 +29,7 @@ const handleMutationError = (error: any) => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     const {
         data: profile,
@@ -50,38 +52,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return profile.roles.map((role: Role) => role.name);
     }, [profile?.roles]);
 
-    const hasPermission = useCallback((permission: string): boolean => {
-        return permissions.includes(permission);
-    }, [permissions]);
 
-    const hasRole = useCallback((role: string): boolean => {
-        return roleNames.includes(role);
-    }, [roleNames]);
-
-
-    // console.log(hasRole('admin'));
-    // console.log(hasPermission('create-articles'));
-
-
-
-    const hasAnyPermission = useCallback((perms: string[]): boolean => {
-        return perms.some((p) => permissions.includes(p));
-    }, [permissions]);
-
-    const hasAllPermissions = useCallback((perms: string[]): boolean => {
-        return perms.every((p) => permissions.includes(p));
-    }, [permissions]);
-
-    // console.log(hasAllPermissions(['create articles', 'edit articles']));
+    const hasPermission = useCallback((permission: string) => permissions.includes(permission), [permissions]);
+    const hasRole = useCallback((role: string) => roleNames.includes(role), [roleNames]);
+    const hasAnyPermission = useCallback((perms: string[]) => perms.some((p) => permissions.includes(p)), [permissions]);
+    const hasAllPermissions = useCallback((perms: string[]) => perms.every((p) => permissions.includes(p)), [permissions]);
 
     const logoutHandlerMutation = logoutMutation();
-    const logoutHandler = () => { logoutHandlerMutation.mutate() };
+
+    const logoutHandler = useCallback(() => {
+        logoutHandlerMutation.mutate(undefined, {
+            onSuccess: (resp) => {
+                if (resp.status === 200 && resp.success) {
+                    localStorage.removeItem('token');
+                    queryClient.clear();
+                    navigate('/login', { replace: true });
+                    toast.success(resp.message || 'Logged out successfully');
+                } else {
+                    toast.error(resp.message || 'Something went wrong');
+                }
+            },
+            onError: (error: any) => {
+                toast.error(error.message || 'Something went wrong');
+            }
+        });
+    }, [logoutHandlerMutation, queryClient, navigate]);
 
     const loginHandlerMutation = useMutation({
         mutationFn: loginService,
         onSuccess: (resp) => {
             if (resp.status === 200) {
                 localStorage.setItem('token', resp.token);
+                queryClient.invalidateQueries();
                 navigate('/', { replace: true });
                 toast.success(resp.message || 'Logged In Successfully');
             } else {
@@ -113,6 +115,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 logoutHandler,
                 loginHandlerMutation,
                 registerHandlerMutation,
+                permissions,
+                roleNames,
                 hasPermission,
                 hasRole,
                 hasAnyPermission,

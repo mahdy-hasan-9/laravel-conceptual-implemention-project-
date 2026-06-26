@@ -6,9 +6,11 @@ import LoginView from "../views/Authentication/LoginView";
 import RegisterView from "../views/Authentication/RegisterView ";
 import ForgetPassword from "../views/Authentication/ForgetPasswordView";
 import ResetPassword from "../views/Authentication/ResetPasswordView";
-import { ProtectedRoute, PublicRoute } from "./RouteGuards";
+import { ProtectedRoute, PublicRoute, RequirePermission, RequireRole } from "./RouteGuards";
 import StudentView from "../views/Student/StudentView";
 import ProfileView from "../views/Profile/ProfileView";
+import Forbidden403 from "../views/Errors/Forbidden403";
+import NotFound404 from "../views/Errors/NotFound404";
 
 export const routes = [
     {
@@ -27,7 +29,8 @@ export const routes = [
         path: "/profile",
         element: ProfileView,
         layout: DashboardLayout,
-        protected: true
+        protected: true,
+        requiredRoles: ['admin', 'manager', 'staff'],
     },
     {
         path: "/login",
@@ -49,36 +52,78 @@ export const routes = [
         element: ResetPassword,
         public: true,
     },
+    {
+        path: "/403",
+        element: Forbidden403,
+        // public: true,
+    },
+    {
+        path: "/*",
+        element: NotFound404,
+        // public: true,
+    },
 ]
 
 
-export const renderRoutes = (routes: any) => {
-    return <Routes>
-        {routes.map((route: any, index: any) => {
-            const Component = route.element;
-            const Layout = route.layout || React.Fragment;
-            let wrappedElement = <Component />;
 
-            if (route.protected) {
-                wrappedElement = (
-                    <ProtectedRoute>
-                        <Component />
-                    </ProtectedRoute>
-                );
-            } else if (route.public) {
-                wrappedElement = (
-                    <PublicRoute>
-                        <Component />
-                    </PublicRoute>
-                );
-            }
+// src/routes/index.tsx (continued)
 
-            return <Route key={index} path={route.path}
-                element={
-                    <Layout>
-                        {wrappedElement}
-                    </Layout>
-                } />
-        })}
-    </Routes>
-}
+export const renderRoutes = (routes: any[]) => {
+    return (
+        <Routes>
+            {routes.map((route, index) => {
+                const Component = route.element;
+                const Layout = route.layout || React.Fragment;
+                let wrappedElement = <Component />;
+
+                // Step 1: Public route guard
+                if (route.public) {
+                    wrappedElement = (
+                        <PublicRoute>
+                            <Component />
+                        </PublicRoute>
+                    );
+                }
+
+                // Step 2: Protected route guard (login required)
+                else if (route.protected) {
+                    wrappedElement = (
+                        <ProtectedRoute>
+                            {/* Step 3: Role guard (if specified) */}
+                            {route.requiredRoles ? (
+                                <RequireRole roles={route.requiredRoles}>
+                                    {/* Step 4: Permission guard (if specified) */}
+                                    {route.requiredPermissions ? (
+                                        <RequirePermission permissions={route.requiredPermissions}>
+                                            <Component />
+                                        </RequirePermission>
+                                    ) : (
+                                        <Component />
+                                    )}
+                                </RequireRole>
+                            ) : route.requiredPermissions ? (
+                                <RequirePermission permissions={route.requiredPermissions}>
+                                    <Component />
+                                </RequirePermission>
+                            ) : (
+                                <Component />
+                            )}
+                        </ProtectedRoute>
+                    );
+                }
+
+                return (
+                    <Route
+                        key={index}
+                        path={route.path}
+                        element={
+                            <Layout>
+                                {wrappedElement}
+                            </Layout>
+                        }
+                    />
+                );
+            })}
+        </Routes>
+    );
+};

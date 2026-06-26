@@ -41,6 +41,8 @@ export interface AuthContextType {
     logoutHandler: () => void;
     loginHandlerMutation: UseMutationResult<any, unknown, any, unknown>;
     registerHandlerMutation: UseMutationResult<any, unknown, any, unknown>;
+    permissions: string[];
+    roleNames: string[];
     hasPermission: (permission: string) => boolean;
     hasRole: (role: string) => boolean;
     hasAnyPermission: (permissions: string[]) => boolean;

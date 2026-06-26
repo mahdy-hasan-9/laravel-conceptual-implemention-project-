@@ -211,12 +211,9 @@ body {
 }
 
 
-/* Replace previous CSS with this */
 .avatar-uploader .ant-upload {
     width: 320px !important;
-    /* 🔥 Force 320px width */
     height: 240px !important;
-    /* 🔥 Force 240px height */
     border-radius: 8px;
     overflow: hidden;
     margin: 0 auto;

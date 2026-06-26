@@ -22,7 +22,7 @@ Route::prefix('auth')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
 
         Route::group(['prefix' => 'user'], function () {
-            Route::get('/profile', [AuthenticationController::class, 'user']);
+            Route::get('/profile', [AuthenticationController::class, 'user'])->middleware('role:admin|manager|staff|student');
             Route::put('/profile', [AuthenticationController::class, 'update']);
             Route::post('/logout', [AuthenticationController::class, 'logout']);
         });

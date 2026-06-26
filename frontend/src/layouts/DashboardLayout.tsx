@@ -4,71 +4,56 @@ import { Layout, Menu, theme, Button } from 'antd';
 import type { MenuProps } from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
-import { menuOptions, menuPaths } from './sidebar/menuOption';
+import { getMenuOptions } from './sidebar/menuOption';
 import ProfileAndNotification from './profileAndNotification';
 import { AuthContext } from '../context/AuthContext';
 
 const { Header, Content, Footer, Sider } = Layout;
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-
-  const [user, setUser] = useState({
-    name: '',
-    email: '',
-  });
   const [collapsed, setCollapsed] = useState(false);
   const [mobile, setMobile] = useState(false);
   const location = useLocation();
 
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+  const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
-  const userProfile = {
-    avatar: '/assets/imgs/avatar.png',
-  };
+  const { profile, logoutHandler, permissions, roleNames } = useContext(AuthContext);
+
+  console.log('permissions', permissions);
+  console.log('roleNames', roleNames);
+
+
+  const { menuOptions, menuPaths } = useMemo(() => {
+    return getMenuOptions(permissions, roleNames);
+  }, [permissions, roleNames, profile]);
 
   const selectedKey = useMemo(() => {
     const match = menuPaths.find((item) =>
       item.path === location.pathname || location.pathname.startsWith(item.path + '/')
     );
     return match?.key || '1';
-  }, [location.pathname]);
+  }, [location.pathname, menuPaths]);
 
+  // Mobile detection
   useEffect(() => {
-    const checkMobile = () => {
-      setMobile(window.innerWidth < 768);
-    };
+    const checkMobile = () => setMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   useEffect(() => {
-    if (mobile) {
-      setCollapsed(true);
-    }
+    if (mobile) setCollapsed(true);
   }, [mobile]);
 
-  const { profile, logoutHandler, refetchProfile } = useContext(AuthContext);
-
-  useEffect(() => {
-    refetchProfile();
-    if (profile) {
-      setUser({
-        name: profile.name,
-        email: profile.email,
-      })
-    }
-  }, [profile]);
-
+  // Profile dropdown items
   const profileItems: MenuProps['items'] = [
     {
       key: 'profile',
       label: (
         <Link to='/profile'>
           <span>
-            <UserOutlined /> {user.name ? user.name : "User"}
+            <UserOutlined /> {profile?.name || "User"}
           </span>
         </Link>
       ),
@@ -92,18 +77,9 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     },
   ];
 
-  const headerStyle: React.CSSProperties = {
-    padding: 0,
-    background: colorBgContainer,
-    position: 'fixed',
-    zIndex: 1001,
-    width: `calc(100% - ${collapsed || mobile ? 0 : 200}px)`,
-    left: collapsed || mobile ? 0 : 200,
-    transition: 'all 0.2s',
-  };
-
   return (
     <Layout style={{ minHeight: '100vh' }}>
+      {/* ========== SIDEBAR ========== */}
       <Sider
         trigger={null}
         collapsible
@@ -123,11 +99,10 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         }}
         width={200}
       >
-        <div className="demo-logo-vertical" style={{ padding: '20px', textAlign: 'center', flexShrink: 0 }}>
+        <div className="demo-logo-vertical" style={{ padding: '20px', textAlign: 'center' }}>
           {/* Logo here */}
-          {/* <img src={userProfile.avatar} alt="" /> */}
         </div>
-        <div style={{ overflow: 'auto', height: 'calc(100vh - 120px)', flex: 1 }}>
+        <div style={{ overflow: 'auto', height: 'calc(100vh - 120px)' }}>
           <Menu
             theme="dark"
             mode="inline"
@@ -138,14 +113,21 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </Sider>
 
-      <Layout
-        style={{
-          marginLeft: collapsed || mobile ? 0 : 200,
-          transition: 'margin-left 0.2s',
-          minHeight: '100vh',
-        }}
-      >
-        <Header style={headerStyle}>
+      {/* ========== MAIN CONTENT ========== */}
+      <Layout style={{
+        marginLeft: collapsed || mobile ? 0 : 200,
+        transition: 'margin-left 0.2s',
+        minHeight: '100vh',
+      }}>
+        <Header style={{
+          padding: 0,
+          background: colorBgContainer,
+          position: 'fixed',
+          zIndex: 1001,
+          width: `calc(100% - ${collapsed || mobile ? 0 : 200}px)`,
+          left: collapsed || mobile ? 0 : 200,
+          transition: 'all 0.2s',
+        }}>
           <div className='flex items-center justify-between' style={{ padding: '0 16px' }}>
             <Button
               type="text"
@@ -153,29 +135,25 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               onClick={() => setCollapsed(!collapsed)}
               style={{ fontSize: '16px', width: 64, height: 64 }}
             />
-
             <ProfileAndNotification
               profileItems={profileItems}
               logoutHandler={logoutHandler}
-              userProfile={userProfile}
+              userProfile={{ avatar: '/assets/imgs/avatar.png' }}
             />
           </div>
         </Header>
-        <Content
-          style={{
-            margin: '64px 16px 16px',
-            overflow: 'auto',
-            height: 'calc(100vh - 64px)',
-          }}
-        >
-          <div
-            style={{
-              padding: 24,
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
-              marginTop: '20px',
-            }}
-          >
+
+        <Content style={{
+          margin: '64px 16px 16px',
+          overflow: 'auto',
+          height: 'calc(100vh - 64px)',
+        }}>
+          <div style={{
+            padding: 24,
+            background: colorBgContainer,
+            borderRadius: borderRadiusLG,
+            marginTop: '20px',
+          }}>
             {children}
           </div>
         </Content>
