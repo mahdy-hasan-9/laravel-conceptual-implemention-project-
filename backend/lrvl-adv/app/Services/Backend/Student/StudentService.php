@@ -4,6 +4,9 @@ namespace App\Services\Backend\Student;
 
 use App\Events\StudentAdded;
 use App\Models\Student;
+use App\Models\User;
+use App\Notifications\AdminManagerNotification;
+use App\Notifications\StudentAddedNotification;
 use Illuminate\Support\Facades\Storage;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +33,15 @@ class StudentService
                 $student->books()->sync($data['books'] ?? []);
 
                 StudentAdded::dispatch($student);
+
+                $recipients = User::whereIn('role', ['admin', 'manager'])->get();
+                if ($recipients->isNotEmpty()) {
+                    foreach ($recipients as $recipient) {
+                        $recipient->notify(
+                            (new AdminManagerNotification($student))->delay(now()->addSeconds(15))
+                        );
+                    }
+                }
 
                 return [
                     'success' => true,

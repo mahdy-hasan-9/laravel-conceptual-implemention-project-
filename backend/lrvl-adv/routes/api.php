@@ -37,4 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/books', [BookController::class, 'bookList']);
         Route::resource('rsc', StudentController::class);
     });
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 });

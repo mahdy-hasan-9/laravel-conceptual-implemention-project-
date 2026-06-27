@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { UserOutlined, UploadOutlined } from '@ant-design/icons';
-import { Layout, Menu, theme, Button } from 'antd';
+import { Layout, Menu, theme, Button, Spin } from 'antd';
 import type { MenuProps } from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
@@ -17,7 +17,13 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
-  const { profile, logoutHandler, permissions, roleNames } = useContext(AuthContext);
+  const { profile, isProfileLoading, logoutHandler, permissions, roleNames } = useContext(AuthContext);
+
+
+  console.log(profile);
+  console.log(isProfileLoading);
+
+
 
   const { menuOptions, menuPaths } = useMemo(() => {
     return getMenuOptions(permissions, roleNames);
@@ -30,7 +36,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     return match?.key || '1';
   }, [location.pathname, menuPaths]);
 
-  // Mobile detection
+
   useEffect(() => {
     const checkMobile = () => setMobile(window.innerWidth < 768);
     checkMobile();
@@ -42,7 +48,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     if (mobile) setCollapsed(true);
   }, [mobile]);
 
-  // Profile dropdown items
+
   const profileItems: MenuProps['items'] = [
     {
       key: 'profile',
@@ -75,7 +81,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      {/* ========== SIDEBAR ========== */}
       <Sider
         trigger={null}
         collapsible
@@ -99,17 +104,24 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           {/* Logo here */}
         </div>
         <div style={{ overflow: 'auto', height: 'calc(100vh - 120px)' }}>
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={[selectedKey]}
-            items={menuOptions}
-            style={{ height: '100%' }}
-          />
+
+          {!isProfileLoading && profile ? (
+            <Menu
+              theme="dark"
+              mode="inline"
+              selectedKeys={[selectedKey]}
+              items={menuOptions}
+              style={{ height: '100%' }}
+            />
+          ) : (
+            <div className='flex flex-col items-center justify-center'>
+              <Spin size="large" />
+              <p className='text-white'>Loading...</p>
+            </div>
+          )}
         </div>
       </Sider>
 
-      {/* ========== MAIN CONTENT ========== */}
       <Layout style={{
         marginLeft: collapsed || mobile ? 0 : 200,
         transition: 'margin-left 0.2s',
