@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use Laravel\Scout\Searchable;
 use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
+
+    use Searchable;
+
     protected $fillable = ['name', 'age', 'gender', 'image_url', 'image_removed', 'is_active', 'address', 'class_id'];
 
     protected $casts = [
@@ -15,6 +19,30 @@ class Student extends Model
     ];
 
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($student) {
+            $student->search_block = implode(' ', array_filter([
+                $student->name,
+                $student->age,
+            ]));
+        });
+    }
+
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'       => (int) $this->id,
+            'name'     => $this->name,
+            'age'      => (int) $this->age,
+            'class_id' => (int) $this->class_id,
+            'search_block' => $this->search_block,
+            'class_name' => $this->studentClass?->name,
+        ];
+    }
 
     public function studentClass()
     {

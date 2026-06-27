@@ -10,7 +10,7 @@ const EditDrawer = () => {
     return (
         <>
             {permission ? <EditDrawerForm /> : <div>
-                <img src="https://i.programmerhumor.io/2023/10/programmerhumor-io-programming-memes-a1a4ba63f708cba.png" alt="" />
+                {/* <img src="https://i.programmerhumor.io/2023/10/programmerhumor-io-programming-memes-a1a4ba63f708cba.png" alt="" /> */}
             </div>}
         </>
     )

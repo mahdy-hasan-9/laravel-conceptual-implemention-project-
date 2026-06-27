@@ -25,6 +25,7 @@ return new class extends Migration
             $table->unsignedBigInteger('class_id');
             $table->foreign('class_id')->references('id')->on('class_models')->onDelete('cascade');
 
+            $table->string('search_block')->nullable()->index();
 
             $table->timestamps();
         });

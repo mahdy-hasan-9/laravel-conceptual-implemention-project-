@@ -7,7 +7,7 @@ use App\Http\Request\Backend\Student\StudentRequest;
 use App\Http\Resources\Backend\StudentResource;
 use App\Models\Student;
 use App\Services\Backend\Student\StudentService;
-
+use Meilisearch\Meilisearch;
 
 class StudentController extends Controller
 {
@@ -20,8 +20,13 @@ class StudentController extends Controller
 
     public function index()
     {
-        $page = request()->query('page', 1);
-        $perPage = request()->query('per_page', 10);
+
+        $startTime = microtime(true);
+
+        $page = (int) request()->query('page', 1);
+        $perPage = (int) request()->query('per_page', 10);
+
+
         $classId = request()->query('class_id');
         $activities = request()->query('activities');
         $books = request()->query('books');
@@ -35,24 +40,39 @@ class StudentController extends Controller
         $books = $params['books'];
         $search = $params['search'];
 
-
-        $student = Student::with([
-            'studentClass' => function ($query) {
-                $query->select('id', 'name');
-            },
-            'activities' => function ($query) {
-                $query->select('activities.id', 'activities.name');
-            },
-            'books' => function ($query) {
-                $query->select('books.id', 'books.name');
+        if (!empty($search)) {
+            // Meilisearch
+            $studentQuery = Student::search($search);
+            if (!empty($params['class_id'])) {
+                $studentQuery->where('class_id', (int) $params['class_id']);
             }
-        ])
-            ->filterByClass($params['class_id'])
-            ->filterByActivities($params['activities'])
-            ->filterByBooks($params['books'])
-            ->search($params['search'])
-            ->orderBy('id', 'desc')
-            ->paginate($perPage, ['*'], 'page', $page);
+            $student = $studentQuery->query(function ($query) {
+                $query->with([
+                    'studentClass:id,name',
+                    'activities:id,name',
+                    'books:id,name'
+                ])->orderBy('id', 'desc');
+            })->paginate($perPage, 'page', $page);
+        } else {
+            //Eloquent
+            $student = Student::with([
+                'studentClass' => function ($query) {
+                    $query->select('id', 'name');
+                },
+                'activities' => function ($query) {
+                    $query->select('activities.id', 'activities.name');
+                },
+                'books' => function ($query) {
+                    $query->select('books.id', 'books.name');
+                }
+            ])
+                ->filterByClass($params['class_id'])
+                ->filterByActivities($params['activities'])
+                ->filterByBooks($params['books'])
+                ->search($params['search'])
+                ->orderBy('id', 'desc')
+                ->paginate($perPage, ['*'], 'page', $page);
+        }
 
         return response()->json([
             'success' => true,
@@ -62,7 +82,9 @@ class StudentController extends Controller
             'current_page' => $student->currentPage(),
             'per_page' => $student->perPage(),
             'last_page' => $student->lastPage(),
-            'message' => 'Student List'
+            'message' => 'Student List',
+            'execution_time' => number_format((microtime(true) - $startTime) * 1000, 2) . ' ms',
+            'search_mode' => !empty($search) ? 'Scout Engine' : 'Eloquent Engine',
         ], 200);
     }
 
