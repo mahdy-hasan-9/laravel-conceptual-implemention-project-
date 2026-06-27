@@ -2,9 +2,11 @@
 
 namespace App\Services\Backend\Student;
 
+use App\Events\StudentAdded;
 use App\Models\Student;
 use Illuminate\Support\Facades\Storage;
 use Exception;
+use Illuminate\Support\Facades\DB;
 
 class StudentService
 {
@@ -17,30 +19,34 @@ class StudentService
 
     public function store(array $data): array
     {
-        try {
-            if (request()->hasFile('image')) {
-                $data['image_url'] = request()->file('image')->store('students', 'public');
+        return DB::transaction(function () use ($data) {
+            try {
+                if (request()->hasFile('image')) {
+                    $data['image_url'] = request()->file('image')->store('students', 'public');
+                }
+
+                $student = $this->student->create($data);
+                $student->activities()->sync($data['activities']);
+                $student->books()->sync($data['books'] ?? []);
+
+                StudentAdded::dispatch($student);
+
+                return [
+                    'success' => true,
+                    'status' => 201,
+                    'message' => 'Student created successfully.',
+                    'data' => [
+                        'student' => $student
+                    ]
+                ];
+            } catch (Exception $e) {
+                return [
+                    'success' => false,
+                    'status' => 500,
+                    'message' => 'Failed to create student: ' . $e->getMessage(),
+                ];
             }
-
-            $student = $this->student->create($data);
-            $student->activities()->sync($data['activities']);
-            $student->books()->sync($data['books'] ?? []);
-
-            return [
-                'success' => true,
-                'status' => 201,
-                'message' => 'Student created successfully.',
-                'data' => [
-                    'student' => $student
-                ]
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'status' => 500,
-                'message' => 'Failed to create student: ' . $e->getMessage(),
-            ];
-        }
+        });
     }
 
     public function update(int $id, array $data): array
@@ -66,7 +72,7 @@ class StudentService
             $student->activities()->sync($data['activities']);
             $student->books()->sync($data['books'] ?? []);
 
-            
+
             return [
                 'success' => true,
                 'status' => 200,

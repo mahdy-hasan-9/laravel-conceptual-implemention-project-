@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Backend\Student;
 
 use App\Http\Controllers\Controller;
 use App\Http\Request\Backend\Student\StudentRequest;
-use App\Http\Resources\Backend\StudentResource;
 use App\Models\Student;
 use App\Services\Backend\Student\StudentService;
-use Meilisearch\Meilisearch;
 
 class StudentController extends Controller
 {
@@ -20,13 +18,9 @@ class StudentController extends Controller
 
     public function index()
     {
-
         $startTime = microtime(true);
-
         $page = (int) request()->query('page', 1);
         $perPage = (int) request()->query('per_page', 10);
-
-
         $classId = request()->query('class_id');
         $activities = request()->query('activities');
         $books = request()->query('books');
