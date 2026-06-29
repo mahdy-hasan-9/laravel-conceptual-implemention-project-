@@ -1,79 +1,42 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { Avatar, List, Button, Empty, Typography } from 'antd';
+
+
+import { useState, useCallback, useRef, useEffect, useContext } from 'react';
+import { Avatar, List, Button, Empty, Typography, Spin } from 'antd';
 import { UserOutlined, CheckOutlined, DeleteOutlined } from '@ant-design/icons';
 import Notification from './Notification';
+import { AuthContext } from '../../context/AuthContext';
+import { useNotifications } from '../../hooks/useNotifications';
+
+
 
 const { Text } = Typography;
 
-interface NotificationItem {
-    id: string;
-    title: string;
-    description: string;
-    time: string;
-    read: boolean;
-}
-
-
 interface ProfileAndNotificationProps {
-    profileItems: any,
+    profileItems: any;
     logoutHandler: () => void;
     userProfile: any;
 }
-
-const notificationData = [
-    {
-        id: '1',
-        title: 'New message received',
-        description: 'You have a new message from the support team.',
-        time: '5 min ago',
-        read: false,
-    },
-    {
-        id: '2',
-        title: 'System update',
-        description: 'The system will undergo maintenance tonight.',
-        time: '1 hour ago',
-        read: false,
-    },
-    {
-        id: '3',
-        title: 'Welcome aboard',
-        description: 'Thanks for joining our platform.',
-        time: '2 days ago',
-        read: true,
-    },
-];
 
 const ProfileAndNotification = ({
     profileItems,
     logoutHandler,
     userProfile,
 }: ProfileAndNotificationProps) => {
+    const { profile } = useContext(AuthContext);
+    const {
+        notifications,
+        unreadCount,
+        loading,
+        markAsRead,
+        markAllAsRead,
+        clearAll,
+    } = useNotifications(profile?.id);
 
-    const [notifOpen, setNotifOpen] = useState<boolean>(false);
-    const [profileOpen, setProfileOpen] = useState<boolean>(false);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
 
     const notifRef = useRef<HTMLDivElement>(null);
     const profileRef = useRef<HTMLDivElement>(null);
-
-    const [notifications, setNotifications] = useState<NotificationItem[]>(notificationData);
-
-    const unreadCount = notifications.filter((n) => !n.read).length;
-    const hasUnread = unreadCount > 0;
-
-    const markAsRead = useCallback((id: string) => {
-        setNotifications((prev) =>
-            prev.map((item) => (item.id === id ? { ...item, read: true } : item))
-        );
-    }, []);
-
-    const markAllAsRead = useCallback(() => {
-        setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
-    }, []);
-
-    const clearAll = useCallback(() => {
-        setNotifications([]);
-    }, []);
 
     const toggleNotif = useCallback(() => {
         setNotifOpen((prev) => !prev);
@@ -85,18 +48,13 @@ const ProfileAndNotification = ({
         setNotifOpen(false);
     }, []);
 
+    // Click outside close
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (
-                notifRef.current &&
-                !notifRef.current.contains(event.target as Node)
-            ) {
+            if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
                 setNotifOpen(false);
             }
-            if (
-                profileRef.current &&
-                !profileRef.current.contains(event.target as Node)
-            ) {
+            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
                 setProfileOpen(false);
             }
         };
@@ -104,39 +62,41 @@ const ProfileAndNotification = ({
         if (notifOpen || profileOpen) {
             document.addEventListener('mousedown', handleClickOutside);
         }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [notifOpen, profileOpen]);
 
+    // 🔔 Notification Card UI
     const notificationCard = (
         <div
             style={{
                 position: 'absolute',
                 top: 'calc(100% + 8px)',
                 right: 0,
-                width: 360,
-                maxHeight: 420,
+                width: 380,
+                maxHeight: 480,
                 background: '#fff',
-                borderRadius: 8,
-                boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
+                borderRadius: 12,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                 overflow: 'hidden',
                 zIndex: 1050,
             }}
         >
+            {/* Header */}
             <div
                 style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '12px 16px',
+                    padding: '14px 18px',
                     borderBottom: '1px solid #f0f0f0',
+                    background: '#fafafa',
                 }}
             >
-                <Text strong>Notifications {hasUnread && `(${unreadCount})`}</Text>
+                <Text strong style={{ fontSize: 16 }}>
+                    🔔 Notifications {unreadCount > 0 && `(${unreadCount} unread)`}
+                </Text>
                 <div style={{ display: 'flex', gap: 8 }}>
-                    {hasUnread && (
+                    {unreadCount > 0 && (
                         <Button
                             type="text"
                             size="small"
@@ -160,12 +120,20 @@ const ProfileAndNotification = ({
                 </div>
             </div>
 
-            <div style={{ maxHeight: 340, overflow: 'auto' }}>
-                {notifications.length === 0 ? (
+            {/* List */}
+            <div style={{ maxHeight: 380, overflow: 'auto' }}>
+                {loading ? (
+                    <div style={{ padding: 40, textAlign: 'center' }}>
+                        <Spin size="small" />
+                        <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+                            Loading...
+                        </Text>
+                    </div>
+                ) : notifications.length === 0 ? (
                     <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description="No notifications"
-                        style={{ padding: 24 }}
+                        description="No notifications yet"
+                        style={{ padding: 40 }}
                     />
                 ) : (
                     <List
@@ -173,28 +141,46 @@ const ProfileAndNotification = ({
                         renderItem={(item) => (
                             <List.Item
                                 style={{
-                                    padding: '12px 16px',
+                                    padding: '14px 18px',
                                     cursor: 'pointer',
-                                    background: item.read ? 'transparent' : '#e6f7ff',
-                                    transition: 'background 0.2s',
+                                    background: item.read_at ? 'transparent' : '#e6f7ff',
+                                    transition: 'all 0.2s',
                                     borderBottom: '1px solid #f0f0f0',
                                 }}
-                                onClick={() => markAsRead(item.id)}
+                                onClick={() => !item.read_at && markAsRead(item.id)}
+                                onMouseEnter={(e) => {
+                                    if (!item.read_at) {
+                                        e.currentTarget.style.background = '#bae7ff';
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = item.read_at
+                                        ? 'transparent'
+                                        : '#e6f7ff';
+                                }}
                             >
                                 <List.Item.Meta
                                     avatar={
                                         <Avatar
                                             size="small"
                                             icon={<UserOutlined />}
-                                            style={{ backgroundColor: '#1890ff' }}
+                                            style={{
+                                                backgroundColor: item.read_at ? '#bfbfbf' : '#1890ff',
+                                            }}
                                         />
                                     }
                                     title={
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <Text strong={!item.read} style={{ fontSize: 14 }}>
-                                                {item.title}
+                                            <Text
+                                                strong={!item.read_at}
+                                                style={{
+                                                    fontSize: 14,
+                                                    color: item.read_at ? '#8c8c8c' : '#262626',
+                                                }}
+                                            >
+                                                {item.heading}
                                             </Text>
-                                            {!item.read && (
+                                            {!item.read_at && (
                                                 <span
                                                     style={{
                                                         width: 8,
@@ -203,6 +189,7 @@ const ProfileAndNotification = ({
                                                         background: '#ff4d4f',
                                                         display: 'inline-block',
                                                         flexShrink: 0,
+                                                        animation: 'pulse 2s infinite',
                                                     }}
                                                 />
                                             )}
@@ -210,12 +197,23 @@ const ProfileAndNotification = ({
                                     }
                                     description={
                                         <div>
-                                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                            <Text
+                                                type="secondary"
+                                                style={{
+                                                    fontSize: 13,
+                                                    color: item.read_at ? '#bfbfbf' : '#595959',
+                                                }}
+                                            >
                                                 {item.description}
                                             </Text>
-                                            <div style={{ marginTop: 4 }}>
+                                            <div style={{ marginTop: 6 }}>
                                                 <Text type="secondary" style={{ fontSize: 11 }}>
-                                                    {item.time}
+                                                    {new Date(item.created_at).toLocaleString('bn-BD', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                    })}
                                                 </Text>
                                             </div>
                                         </div>
@@ -229,6 +227,7 @@ const ProfileAndNotification = ({
         </div>
     );
 
+    // Profile menu (unchanged)
     const profileMenu = (
         <div
             style={{
@@ -243,9 +242,8 @@ const ProfileAndNotification = ({
                 zIndex: 1050,
             }}
         >
-            {profileItems?.map((item) => {
+            {profileItems?.map((item: any) => {
                 if (!item) return null;
-
                 if (item.type === 'divider') {
                     return (
                         <div
@@ -254,10 +252,7 @@ const ProfileAndNotification = ({
                         />
                     );
                 }
-
                 const isLogout = item.key === 'logout';
-                const label = item.label as React.ReactNode;
-
                 return (
                     <div
                         key={item.key}
@@ -266,7 +261,7 @@ const ProfileAndNotification = ({
                             setProfileOpen(false);
                         }}
                         style={{
-                            padding: '0px 16px',
+                            padding: '10px 16px',
                             cursor: 'pointer',
                             color: isLogout ? '#ff4d4f' : 'rgba(0,0,0,0.88)',
                             transition: 'background 0.2s',
@@ -281,7 +276,7 @@ const ProfileAndNotification = ({
                             (e.currentTarget.style.background = 'transparent')
                         }
                     >
-                        {label}
+                        {item.label}
                     </div>
                 );
             })}
@@ -289,19 +284,26 @@ const ProfileAndNotification = ({
     );
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {/* 🔔 Notification Bell */}
+            <Notification
+                notifRef={notifRef}
+                toggleNotif={toggleNotif}
+                unreadCount={unreadCount}
+                notifOpen={notifOpen}
+                notificationCard={notificationCard}
+            />
 
-            <Notification notifRef={notifRef} toggleNotif={toggleNotif} unreadCount={unreadCount} notifOpen={notifOpen} notificationCard={notificationCard} />
-
+            {/* 👤 Profile */}
             <div ref={profileRef} style={{ position: 'relative' }}>
                 <div
                     onClick={toggleProfile}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 6,
+                        gap: 8,
                         cursor: 'pointer',
-                        padding: '2px 6px',
+                        padding: '4px 8px',
                         borderRadius: 8,
                         transition: 'background 0.2s',
                     }}
@@ -318,8 +320,10 @@ const ProfileAndNotification = ({
                         size={36}
                         style={{ backgroundColor: '#1890ff' }}
                     />
+                    <Text strong style={{ fontSize: 14 }}>
+                        {profile?.name || 'User'}
+                    </Text>
                 </div>
-
                 {profileOpen && profileMenu}
             </div>
         </div>

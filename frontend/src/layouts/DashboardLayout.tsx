@@ -19,12 +19,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
   const { profile, isProfileLoading, logoutHandler, permissions, roleNames } = useContext(AuthContext);
 
-
-  console.log(profile);
-  console.log(isProfileLoading);
-
-
-
   const { menuOptions, menuPaths } = useMemo(() => {
     return getMenuOptions(permissions, roleNames);
   }, [permissions, roleNames, profile]);

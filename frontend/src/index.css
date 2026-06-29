@@ -263,3 +263,19 @@ div:hover .upload-overlay {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+
+/* src/styles/notification.css */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(255, 77, 79, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
+    }
+}

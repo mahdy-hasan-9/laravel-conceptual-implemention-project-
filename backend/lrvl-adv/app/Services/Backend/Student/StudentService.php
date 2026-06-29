@@ -6,7 +6,6 @@ use App\Events\StudentAdded;
 use App\Models\Student;
 use App\Models\User;
 use App\Notifications\AdminManagerNotification;
-use App\Notifications\StudentAddedNotification;
 use Illuminate\Support\Facades\Storage;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +31,7 @@ class StudentService
                 $student->activities()->sync($data['activities']);
                 $student->books()->sync($data['books'] ?? []);
 
-                StudentAdded::dispatch($student);
+                // StudentAdded::dispatch($student);
 
                 $recipients = User::whereIn('role', ['admin', 'manager'])->get();
                 if ($recipients->isNotEmpty()) {

@@ -4,6 +4,7 @@ use App\Http\Controllers\Backend\Activity\ActivityController;
 use App\Http\Controllers\Backend\Authentication\AuthenticationController;
 use App\Http\Controllers\Backend\Book\BookController;
 use App\Http\Controllers\Backend\Class\ClassController;
+use App\Http\Controllers\Backend\Notification\NotificationController;
 use App\Http\Controllers\Backend\Student\StudentController;
 use Illuminate\Support\Facades\Route;
 
