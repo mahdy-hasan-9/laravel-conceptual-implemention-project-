@@ -32,7 +32,6 @@ const TableHeader = ({ search, setSearch, columnInfo, handleChangeColumns, setFi
                 <div className='w-full'>
                     <div className='text-end'>
                         <div className='flex justify-end gap-3'>
-                            {/* <ColumnButton columnInfo={columnInfo} handleChangeColumns={handleChangeColumns} /> */}
                             <FilterButton toggleFilter={toggleFilter} />
                             <RequireAnyRole roles={['admin', 'manager']}>
                                 <Button type='primary' onClick={handleOpenDrawer}>Add New</Button>

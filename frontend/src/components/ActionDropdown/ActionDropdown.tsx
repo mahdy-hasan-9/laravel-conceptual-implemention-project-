@@ -87,7 +87,6 @@ const ActionDropdown = ({ data }) => {
             >
                 <p>Are you sure you want to delete this student?</p>
             </Modal>
-            {/* <EditDrawer data={data}/> */}
         </>
     )
 }

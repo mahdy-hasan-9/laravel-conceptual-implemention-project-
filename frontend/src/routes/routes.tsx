@@ -66,8 +66,6 @@ export const routes = [
 
 
 
-// src/routes/index.tsx (continued)
-
 export const renderRoutes = (routes: any[]) => {
     return (
         <Routes>
@@ -75,8 +73,6 @@ export const renderRoutes = (routes: any[]) => {
                 const Component = route.element;
                 const Layout = route.layout || React.Fragment;
                 let wrappedElement = <Component />;
-
-                // Step 1: Public route guard
                 if (route.public) {
                     wrappedElement = (
                         <PublicRoute>
@@ -84,15 +80,11 @@ export const renderRoutes = (routes: any[]) => {
                         </PublicRoute>
                     );
                 }
-
-                // Step 2: Protected route guard (login required)
                 else if (route.protected) {
                     wrappedElement = (
                         <ProtectedRoute>
-                            {/* Step 3: Role guard (if specified) */}
                             {route.requiredRoles ? (
                                 <RequireRole roles={route.requiredRoles}>
-                                    {/* Step 4: Permission guard (if specified) */}
                                     {route.requiredPermissions ? (
                                         <RequirePermission permissions={route.requiredPermissions}>
                                             <Component />

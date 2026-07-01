@@ -4,9 +4,8 @@ import echo from '../lib/echo';
 import { fetchNotifications, markNotificationAsRead } from '../services/notificationApi';
 import type { ApiNotification, NotificationData } from '../types/notification';
 
-/* -------------------------------------------------------------------------- */
-/*  Return type — all consumers rely on this shape                            */
-/* -------------------------------------------------------------------------- */
+
+
 interface UseNotificationsReturn {
     notifications: NotificationData[];
     unreadCount: number;
@@ -18,18 +17,14 @@ interface UseNotificationsReturn {
     newNotificationCount: number;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Hook: centralised notification state + real‑time via Reverb               */
-/* -------------------------------------------------------------------------- */
+
 export const useNotifications = (userId: number | undefined): UseNotificationsReturn => {
     const [notifications, setNotifications] = useState<NotificationData[]>([]);
     const [loading, setLoading] = useState(true);
     const [newNotificationCount, setNewNotificationCount] = useState(0);
     const isSubscribed = useRef(false);
 
-    /* ---------------------------------------------------------------------- */
-    /*  Helper: format API response to local NotificationData shape           */
-    /* ---------------------------------------------------------------------- */
+
     const formatNotification = (item: ApiNotification): NotificationData => ({
         id: item.id,
         heading: item.data.heading,
@@ -39,9 +34,7 @@ export const useNotifications = (userId: number | undefined): UseNotificationsRe
         created_at: item.created_at,
     });
 
-    /* ---------------------------------------------------------------------- */
-    /*  1. Initial load — fetch from API once userId is available             */
-    /* ---------------------------------------------------------------------- */
+
     useEffect(() => {
         if (!userId) {
             setLoading(false);
@@ -64,9 +57,6 @@ export const useNotifications = (userId: number | undefined): UseNotificationsRe
         load();
     }, [userId]);
 
-    /* ---------------------------------------------------------------------- */
-    /*  2. Real‑time — subscribe to private user channel via Reverb           */
-    /* ---------------------------------------------------------------------- */
     useEffect(() => {
         if (!userId || isSubscribed.current) return;
         isSubscribed.current = true;
@@ -80,9 +70,7 @@ export const useNotifications = (userId: number | undefined): UseNotificationsRe
             console.log('[Echo] Notification received:', payload);
 
             try {
-                // Reverb may deliver data nested under `payload.data` or flat
                 const data = payload.data ?? payload;
-
                 const newNotif: NotificationData = {
                     id: payload.id,
                     heading: data.heading,
@@ -106,9 +94,6 @@ export const useNotifications = (userId: number | undefined): UseNotificationsRe
         };
     }, [userId]);
 
-    /* ---------------------------------------------------------------------- */
-    /*  3. Mark a single notification as read                                 */
-    /* ---------------------------------------------------------------------- */
     const markAsRead = useCallback(async (id: string) => {
         try {
             await markNotificationAsRead(id);
@@ -122,23 +107,14 @@ export const useNotifications = (userId: number | undefined): UseNotificationsRe
         }
     }, []);
 
-    /* ---------------------------------------------------------------------- */
-    /*  4. Mark all as read (optimistic UI)                                   */
-    /* ---------------------------------------------------------------------- */
     const markAllAsRead = useCallback(() => {
         setNotifications((prev) =>
             prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })),
         );
     }, []);
 
-    /* ---------------------------------------------------------------------- */
-    /*  5. Clear all (e.g. on logout)                                         */
-    /* ---------------------------------------------------------------------- */
     const clearAll = useCallback(() => setNotifications([]), []);
 
-    /* ---------------------------------------------------------------------- */
-    /*  6. Manual refetch                                                     */
-    /* ---------------------------------------------------------------------- */
     const refetchNotifications = useCallback(async () => {
         try {
             setLoading(true);
@@ -153,9 +129,6 @@ export const useNotifications = (userId: number | undefined): UseNotificationsRe
         }
     }, []);
 
-    /* ---------------------------------------------------------------------- */
-    /*  Derived: unread count                                                 */
-    /* ---------------------------------------------------------------------- */
     const unreadCount = notifications.filter((n) => !n.read_at).length;
 
     return {

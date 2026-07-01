@@ -49,7 +49,6 @@ const ProfileAndNotification = ({
         setNotifOpen(false);
     }, []);
 
-    // Click outside close
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
@@ -66,7 +65,6 @@ const ProfileAndNotification = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [notifOpen, profileOpen]);
 
-    // 🔔 Notification Card UI
     const notificationCard = (
         <div
             style={{
@@ -82,7 +80,6 @@ const ProfileAndNotification = ({
                 zIndex: 1050,
             }}
         >
-            {/* Header */}
             <div
                 style={{
                     display: 'flex',
@@ -120,8 +117,6 @@ const ProfileAndNotification = ({
                     )}
                 </div>
             </div>
-
-            {/* List */}
             <div style={{ maxHeight: 380, overflow: 'auto' }}>
                 {loading ? (
                     <div style={{ padding: 40, textAlign: 'center' }}>
@@ -228,7 +223,6 @@ const ProfileAndNotification = ({
         </div>
     );
 
-    // Profile menu (unchanged)
     const profileMenu = (
         <div
             style={{
@@ -286,7 +280,7 @@ const ProfileAndNotification = ({
 
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {/* 🔔 Notification Bell */}
+
             <Notification
                 notifRef={notifRef}
                 toggleNotif={toggleNotif}
@@ -295,7 +289,6 @@ const ProfileAndNotification = ({
                 notificationCard={notificationCard}
             />
 
-            {/* 👤 Profile */}
             <div ref={profileRef} style={{ position: 'relative' }}>
                 <div
                     onClick={toggleProfile}
