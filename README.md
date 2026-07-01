@@ -1,6 +1,6 @@
 # Advanced Laravel API & React Ecosystem
 
-[![Laravel Version](https://img.shields.io/badge/Laravel-11.x-FF2D20?logo=laravel)](https://laravel.com)
+[![Laravel Version](https://img.shields.io/badge/Laravel-13.x-FF2D20?logo=laravel)](https://laravel.com)
 [![React Version](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)](https://react.dev)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
