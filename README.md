@@ -4,7 +4,7 @@
 [![React Version](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)](https://react.dev)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A robust, -ready conceptual implementation demonstrating architectural best practices in modern web development. This project couples a high-performance **Laravel API** backend with a dynamic, server-side rendered **React.js** frontend powered by **Ant Design**.
+A robust, production-ready conceptual implementation demonstrating architectural best practices in modern web development. This project couples a high-performance **Laravel API** backend with a dynamic, server-side rendered **React.js** frontend powered by **Ant Design**.
 
 ---
 
