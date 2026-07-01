@@ -47,7 +47,7 @@ A robust, -ready conceptual implementation demonstrating architectural best prac
 
 ## 📂 Repository Structure Note
 
-> 💡 **Important:** The complete production-ready codebase, including all backend API logic, migrations, and React components, is fully maintained inside the `master` branch.
+> 💡 **Important:** The complete production-ready codebase, including all backend API logic, migrations, and React components, is fully maintained inside the `latest` branch.
 
 ---
 
